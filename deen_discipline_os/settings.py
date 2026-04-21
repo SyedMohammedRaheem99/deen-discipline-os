@@ -129,3 +129,17 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ===========================================================
+# Authentication Settings
+# ===========================================================
+
+# Where to redirect after a successful login
+LOGIN_REDIRECT_URL = '/'
+
+# Where to redirect after logout
+LOGOUT_REDIRECT_URL = '/'
+
+# Where @login_required sends unauthenticated users
+LOGIN_URL = '/login/'

@@ -20,6 +20,10 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # All core app URLs are handled inside core/urls.py
+    # Django's built-in auth views (login, logout, password change, etc.)
+    # Provides: /login/, /logout/, /password_change/, etc.
+    path('', include('django.contrib.auth.urls')),
+
+    # All core app URLs (home, register, and future features)
     path('', include('core.urls')),
 ]

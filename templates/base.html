@@ -17,6 +17,22 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="{% url 'core:home' %}" class="nav-brand">Deen &amp; Discipline OS</a>
+
+            <div class="nav-links">
+                {% if request.user.is_authenticated %}
+                    {# Show username and logout when user is logged in #}
+                    <span class="nav-username">{{ request.user.username }}</span>
+                    {# Logout requires POST in Django 5 — a plain <a> tag would cause HTTP 405 #}
+                    <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link nav-logout-btn">Logout</button>
+                    </form>
+                {% else %}
+                    {# Show login and register links for guests #}
+                    <a href="{% url 'login' %}" class="nav-link">Login</a>
+                    <a href="{% url 'core:register' %}" class="nav-link">Register</a>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
