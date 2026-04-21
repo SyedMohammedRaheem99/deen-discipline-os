@@ -46,5 +46,18 @@
         </button>
     </form>
 
+    {% if entry %}
+    <!-- Delete form — only shown when an entry exists today -->
+    <form
+        method="post"
+        action="{% url 'core:journal_delete' %}"
+        style="margin-top: 0.8rem;"
+        onsubmit="return confirm('Delete today\'s journal entry? This cannot be undone.');"
+    >
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete Entry</button>
+    </form>
+    {% endif %}
+
 </div>
 {% endblock %}

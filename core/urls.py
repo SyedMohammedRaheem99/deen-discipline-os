@@ -23,4 +23,5 @@ urlpatterns = [
     # Daily journal
     path('journal/', views.journal_view, name='journal_view'),
     path('journal/save/', views.journal_save, name='journal_save'),
+    path('journal/delete/', views.journal_delete, name='journal_delete'),
 ]

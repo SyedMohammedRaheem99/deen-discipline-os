@@ -10,6 +10,13 @@
         <h2 class="dashboard-greeting">Assalamu Alaikum, {{ request.user.username }} 🌙</h2>
         <p class="dashboard-date">{{ today|date:"l, F j, Y" }}</p>
     </div>
+
+    <!-- Streak badge — only shown when streak > 0 -->
+    {% if streak > 0 %}
+    <div class="streak-badge">
+        🔥 {{ streak }} day streak
+    </div>
+    {% endif %}
 </div>
 
 <!-- ===== DISCIPLINE SCORE ===== -->
@@ -22,10 +29,13 @@
         <div class="score-bar-fill" style="width: {{ discipline_score }}%;"></div>
     </div>
 
+    <!-- Contextual message based on score range -->
+    <p class="score-message">{{ score_message }}</p>
+
     <p class="score-breakdown">
-        Prayers: {{ completed_prayers }}/5 completed &nbsp;|&nbsp;
+        Prayers: {{ completed_prayers }}/5 &nbsp;|&nbsp;
         On time: {{ ontime_prayers }}/5 &nbsp;|&nbsp;
-        Tasks: {{ completed_tasks }}/{{ total_tasks }}
+        Tasks: {{ completed_tasks }}/{{ total_tasks|default:"0" }}
     </p>
 </div>
 
@@ -35,13 +45,22 @@
     <!-- Tasks Card -->
     <div class="dash-card">
         <h3 class="dash-card-title">Tasks</h3>
-        <p class="dash-card-stat">{{ completed_tasks }} <span>/ {{ total_tasks }}</span></p>
-        <p class="dash-card-sub">completed today</p>
-        {% if pending_tasks > 0 %}
-            <p class="dash-card-note">{{ pending_tasks }} still pending</p>
+
+        {% if total_tasks > 0 %}
+            <p class="dash-card-stat">{{ completed_tasks }} <span>/ {{ total_tasks }}</span></p>
+            <p class="dash-card-sub">completed today</p>
+            {% if pending_tasks > 0 %}
+                <p class="dash-card-note">{{ pending_tasks }} still pending</p>
+            {% else %}
+                <p class="dash-card-note dash-card-success">All done!</p>
+            {% endif %}
         {% else %}
-            <p class="dash-card-note dash-card-success">All done!</p>
+            <!-- Edge case: no tasks created today -->
+            <p class="dash-card-stat dash-card-empty">—</p>
+            <p class="dash-card-sub">no tasks today</p>
+            <p class="dash-card-note">Create a task to get started</p>
         {% endif %}
+
         <a href="{% url 'core:task_list' %}" class="dash-card-link">View Tasks →</a>
     </div>
 
@@ -50,22 +69,31 @@
         <h3 class="dash-card-title">Prayers</h3>
         <p class="dash-card-stat">{{ completed_prayers }} <span>/ 5</span></p>
         <p class="dash-card-sub">completed today</p>
-        <p class="dash-card-note">{{ ontime_prayers }} on time</p>
+
+        {% if ontime_prayers > 0 %}
+            <p class="dash-card-note dash-card-success">{{ ontime_prayers }} on time</p>
+        {% else %}
+            <p class="dash-card-note">None on time yet</p>
+        {% endif %}
+
         <a href="{% url 'core:prayer_list' %}" class="dash-card-link">View Prayers →</a>
     </div>
 
     <!-- Journal Card -->
     <div class="dash-card">
         <h3 class="dash-card-title">Journal</h3>
+
         {% if journal_entry %}
             <p class="dash-card-stat">{{ journal_entry.rating }} <span>/ 10</span></p>
             <p class="dash-card-sub">today's rating</p>
-            <p class="dash-card-note dash-card-success">Entry written</p>
+            <p class="dash-card-note dash-card-success">Entry written ✓</p>
         {% else %}
+            <!-- Edge case: no journal entry yet -->
             <p class="dash-card-stat dash-card-empty">—</p>
             <p class="dash-card-sub">no entry yet</p>
-            <p class="dash-card-note">Write your reflection</p>
+            <p class="dash-card-note">Reflect on your day</p>
         {% endif %}
+
         <a href="{% url 'core:journal_view' %}" class="dash-card-link">
             {% if journal_entry %}View Journal →{% else %}Write Now →{% endif %}
         </a>

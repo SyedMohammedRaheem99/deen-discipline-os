@@ -2,28 +2,80 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from datetime import timedelta
 from .forms import RegisterForm, TaskForm, JournalForm
 from .models import Task, Prayer, Journal
+
+
+def calculate_streak(user):
+    """
+    Calculate the user's current consecutive discipline streak.
+
+    A day counts toward the streak if ALL of the following are true:
+      - At least 3 prayers were completed that day
+      - At least 1 task was completed that day
+
+    We walk backwards from yesterday (today is still in progress),
+    counting consecutive days that meet the condition.
+    Today is counted separately at the end if it qualifies.
+
+    Returns the streak count as an integer.
+    """
+    today = timezone.localdate()
+    streak = 0
+
+    # Check up to 365 days back to find where the streak breaks
+    # We start from yesterday because today is still ongoing
+    for days_back in range(1, 366):
+        day = today - timedelta(days=days_back)
+
+        # Count completed prayers for this day
+        prayers_done = Prayer.objects.filter(
+            user=user, date=day, completed=True
+        ).count()
+
+        # Count completed tasks for this day
+        tasks_done = Task.objects.filter(
+            user=user, created_at__date=day, completed=True
+        ).count()
+
+        # Check if this day meets the streak condition
+        if prayers_done >= 3 and tasks_done >= 1:
+            streak += 1
+        else:
+            # Streak is broken — stop counting
+            break
+
+    # Also count today if it already qualifies (user has been active today)
+    today_prayers_done = Prayer.objects.filter(
+        user=user, date=today, completed=True
+    ).count()
+    today_tasks_done = Task.objects.filter(
+        user=user, created_at__date=today, completed=True
+    ).count()
+
+    if today_prayers_done >= 3 and today_tasks_done >= 1:
+        streak += 1
+
+    return streak
 
 
 @login_required
 def home(request):
     """
     Dashboard — the main homepage showing today's performance summary.
-    Computes tasks, prayers, journal, and discipline score for the logged-in user.
+    Computes tasks, prayers, journal, discipline score, and streak.
     """
     today = timezone.localdate()
 
     # ---- Tasks ----
-    # All tasks created today by this user
-    today_tasks = Task.objects.filter(user=request.user, created_at__date=today)
+    today_tasks     = Task.objects.filter(user=request.user, created_at__date=today)
     total_tasks     = today_tasks.count()
     completed_tasks = today_tasks.filter(completed=True).count()
     pending_tasks   = total_tasks - completed_tasks
 
     # ---- Prayers ----
-    # Auto-create today's prayer records if they don't exist yet
-    # (same logic as prayer_list — keeps dashboard self-sufficient)
+    # Auto-create today's prayer records if missing (idempotent)
     for prayer_name in PRAYER_ORDER:
         Prayer.objects.get_or_create(
             user=request.user,
@@ -32,7 +84,7 @@ def home(request):
             defaults={'completed': False, 'on_time': False},
         )
 
-    today_prayers    = Prayer.objects.filter(user=request.user, date=today)
+    today_prayers     = Prayer.objects.filter(user=request.user, date=today)
     completed_prayers = today_prayers.filter(completed=True).count()
     ontime_prayers    = today_prayers.filter(on_time=True).count()
 
@@ -40,20 +92,29 @@ def home(request):
     journal_entry = Journal.objects.filter(user=request.user, date=today).first()
 
     # ---- Discipline Score (out of 100) ----
-    # Each completed prayer  → +10 points (max 50)
-    # Each on-time prayer    → +5 bonus   (max 25)
-    # Task completion ratio  → up to 25 points
-    prayer_score  = completed_prayers * 10          # 0–50
-    ontime_score  = ontime_prayers * 5              # 0–25
+    # Prayers:  each completed = +10 (max 50), each on-time = +5 bonus (max 25)
+    # Tasks:    completion ratio scaled to 25 points; 0 tasks = 0 (not penalised)
+    prayer_score = completed_prayers * 10   # 0–50
+    ontime_score = ontime_prayers * 5       # 0–25
 
-    # Task score: percentage of completed tasks, scaled to 25 points
-    # If no tasks today, this portion is 0 (not penalised)
     if total_tasks > 0:
+        # Proportional: e.g. 2 of 4 tasks done = 50% × 25 = 12 points
         task_score = int((completed_tasks / total_tasks) * 25)
     else:
-        task_score = 0
+        task_score = 0  # No tasks today — neither rewarded nor penalised
 
     discipline_score = prayer_score + ontime_score + task_score  # 0–100
+
+    # ---- Score Message ----
+    if discipline_score >= 80:
+        score_message = 'Excellent discipline! Keep it up.'
+    elif discipline_score >= 50:
+        score_message = 'Good progress. Keep improving.'
+    else:
+        score_message = 'Needs improvement. Stay consistent.'
+
+    # ---- Streak ----
+    streak = calculate_streak(request.user)
 
     return render(request, 'dashboard.html', {
         'today': today,
@@ -68,6 +129,9 @@ def home(request):
         'journal_entry': journal_entry,
         # Score
         'discipline_score': discipline_score,
+        'score_message':    score_message,
+        # Streak
+        'streak': streak,
     })
 
 
@@ -283,3 +347,18 @@ def journal_save(request):
         'entry': entry,
         'today': today,
     })
+
+
+@login_required
+def journal_delete(request):
+    """
+    Delete today's journal entry for the logged-in user.
+    POST only — prevents deletion via accidental GET requests (e.g. link crawlers).
+    Filters strictly by user so no one can delete another user's entry.
+    """
+    if request.method == 'POST':
+        today = timezone.localdate()
+        # filter().delete() is safe — does nothing if no entry exists
+        Journal.objects.filter(user=request.user, date=today).delete()
+
+    return redirect('core:journal_view')
