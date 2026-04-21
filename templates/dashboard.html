@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — Deen & Discipline OS{% endblock %}
+
+{% block content %}
+
+<!-- ===== GREETING ===== -->
+<div class="dashboard-header">
+    <div>
+        <h2 class="dashboard-greeting">Assalamu Alaikum, {{ request.user.username }} 🌙</h2>
+        <p class="dashboard-date">{{ today|date:"l, F j, Y" }}</p>
+    </div>
+</div>
+
+<!-- ===== DISCIPLINE SCORE ===== -->
+<div class="score-card">
+    <p class="score-label">Today's Discipline Score</p>
+    <p class="score-value">{{ discipline_score }}<span class="score-max">/100</span></p>
+
+    <!-- Visual progress bar -->
+    <div class="score-bar-bg">
+        <div class="score-bar-fill" style="width: {{ discipline_score }}%;"></div>
+    </div>
+
+    <p class="score-breakdown">
+        Prayers: {{ completed_prayers }}/5 completed &nbsp;|&nbsp;
+        On time: {{ ontime_prayers }}/5 &nbsp;|&nbsp;
+        Tasks: {{ completed_tasks }}/{{ total_tasks }}
+    </p>
+</div>
+
+<!-- ===== SUMMARY CARDS ===== -->
+<div class="dashboard-cards">
+
+    <!-- Tasks Card -->
+    <div class="dash-card">
+        <h3 class="dash-card-title">Tasks</h3>
+        <p class="dash-card-stat">{{ completed_tasks }} <span>/ {{ total_tasks }}</span></p>
+        <p class="dash-card-sub">completed today</p>
+        {% if pending_tasks > 0 %}
+            <p class="dash-card-note">{{ pending_tasks }} still pending</p>
+        {% else %}
+            <p class="dash-card-note dash-card-success">All done!</p>
+        {% endif %}
+        <a href="{% url 'core:task_list' %}" class="dash-card-link">View Tasks →</a>
+    </div>
+
+    <!-- Prayers Card -->
+    <div class="dash-card">
+        <h3 class="dash-card-title">Prayers</h3>
+        <p class="dash-card-stat">{{ completed_prayers }} <span>/ 5</span></p>
+        <p class="dash-card-sub">completed today</p>
+        <p class="dash-card-note">{{ ontime_prayers }} on time</p>
+        <a href="{% url 'core:prayer_list' %}" class="dash-card-link">View Prayers →</a>
+    </div>
+
+    <!-- Journal Card -->
+    <div class="dash-card">
+        <h3 class="dash-card-title">Journal</h3>
+        {% if journal_entry %}
+            <p class="dash-card-stat">{{ journal_entry.rating }} <span>/ 10</span></p>
+            <p class="dash-card-sub">today's rating</p>
+            <p class="dash-card-note dash-card-success">Entry written</p>
+        {% else %}
+            <p class="dash-card-stat dash-card-empty">—</p>
+            <p class="dash-card-sub">no entry yet</p>
+            <p class="dash-card-note">Write your reflection</p>
+        {% endif %}
+        <a href="{% url 'core:journal_view' %}" class="dash-card-link">
+            {% if journal_entry %}View Journal →{% else %}Write Now →{% endif %}
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

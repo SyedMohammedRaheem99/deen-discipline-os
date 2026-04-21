@@ -9,10 +9,66 @@ from .models import Task, Prayer, Journal
 @login_required
 def home(request):
     """
-    Homepage view — requires the user to be logged in.
-    Unauthenticated users are redirected to /login/ (set via LOGIN_URL in settings).
+    Dashboard — the main homepage showing today's performance summary.
+    Computes tasks, prayers, journal, and discipline score for the logged-in user.
     """
-    return render(request, 'home.html')
+    today = timezone.localdate()
+
+    # ---- Tasks ----
+    # All tasks created today by this user
+    today_tasks = Task.objects.filter(user=request.user, created_at__date=today)
+    total_tasks     = today_tasks.count()
+    completed_tasks = today_tasks.filter(completed=True).count()
+    pending_tasks   = total_tasks - completed_tasks
+
+    # ---- Prayers ----
+    # Auto-create today's prayer records if they don't exist yet
+    # (same logic as prayer_list — keeps dashboard self-sufficient)
+    for prayer_name in PRAYER_ORDER:
+        Prayer.objects.get_or_create(
+            user=request.user,
+            date=today,
+            prayer_name=prayer_name,
+            defaults={'completed': False, 'on_time': False},
+        )
+
+    today_prayers    = Prayer.objects.filter(user=request.user, date=today)
+    completed_prayers = today_prayers.filter(completed=True).count()
+    ontime_prayers    = today_prayers.filter(on_time=True).count()
+
+    # ---- Journal ----
+    journal_entry = Journal.objects.filter(user=request.user, date=today).first()
+
+    # ---- Discipline Score (out of 100) ----
+    # Each completed prayer  → +10 points (max 50)
+    # Each on-time prayer    → +5 bonus   (max 25)
+    # Task completion ratio  → up to 25 points
+    prayer_score  = completed_prayers * 10          # 0–50
+    ontime_score  = ontime_prayers * 5              # 0–25
+
+    # Task score: percentage of completed tasks, scaled to 25 points
+    # If no tasks today, this portion is 0 (not penalised)
+    if total_tasks > 0:
+        task_score = int((completed_tasks / total_tasks) * 25)
+    else:
+        task_score = 0
+
+    discipline_score = prayer_score + ontime_score + task_score  # 0–100
+
+    return render(request, 'dashboard.html', {
+        'today': today,
+        # Tasks
+        'total_tasks':     total_tasks,
+        'completed_tasks': completed_tasks,
+        'pending_tasks':   pending_tasks,
+        # Prayers
+        'completed_prayers': completed_prayers,
+        'ontime_prayers':    ontime_prayers,
+        # Journal
+        'journal_entry': journal_entry,
+        # Score
+        'discipline_score': discipline_score,
+    })
 
 
 def register(request):
