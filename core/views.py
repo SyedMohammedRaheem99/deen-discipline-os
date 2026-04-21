@@ -1,3 +1,10 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def home(request):
+    """
+    Homepage view — the main entry point of the application.
+    Renders the landing page with the project title.
+    """
+    return render(request, 'home.html')
+
