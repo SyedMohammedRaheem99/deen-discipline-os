@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Prayers — Deen & Discipline OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">Today's Prayers</h2>
+    <span class="page-date">{{ today|date:"l, F j, Y" }}</span>
+</div>
+
+<ul class="prayer-list">
+    {% for prayer in prayers %}
+    <li class="prayer-item {% if prayer.completed %}prayer-done{% endif %}">
+
+        <!-- Prayer name -->
+        <div class="prayer-name">
+            {{ prayer.get_prayer_name_display }}
+        </div>
+
+        <!-- Status indicators -->
+        <div class="prayer-status">
+            {% if prayer.completed %}
+                <span class="badge badge-done">Prayed</span>
+            {% else %}
+                <span class="badge badge-missed">Not Yet</span>
+            {% endif %}
+
+            {% if prayer.completed %}
+                {% if prayer.on_time %}
+                    <span class="badge badge-ontime">On Time</span>
+                {% else %}
+                    <span class="badge badge-late">Late</span>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Action buttons -->
+        <div class="prayer-actions">
+
+            {# Toggle completed — POST only for security #}
+            <form method="post" action="{% url 'core:prayer_toggle' prayer.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if prayer.completed %}btn-undo{% else %}btn-complete{% endif %}">
+                    {% if prayer.completed %}Undo{% else %}Prayed{% endif %}
+                </button>
+            </form>
+
+            {# Toggle on_time — only shown when prayer is completed #}
+            {% if prayer.completed %}
+            <form method="post" action="{% url 'core:prayer_on_time_toggle' prayer.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if prayer.on_time %}btn-undo{% else %}btn-ontime{% endif %}">
+                    {% if prayer.on_time %}Not On Time{% else %}On Time{% endif %}
+                </button>
+            </form>
+            {% endif %}
+
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

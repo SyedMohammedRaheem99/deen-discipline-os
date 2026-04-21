@@ -315,6 +315,82 @@ body {
     text-decoration: underline;
 }
 
+/* ----- Prayer List ----- */
+.prayer-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.prayer-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    border-left: 4px solid #1a1a2e;
+    transition: opacity 0.2s;
+}
+
+.prayer-done {
+    border-left-color: #27ae60;
+}
+
+.prayer-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    min-width: 90px;
+}
+
+.prayer-status {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.prayer-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ----- Badges ----- */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.badge-done    { background: #d4edda; color: #155724; }
+.badge-missed  { background: #f8d7da; color: #721c24; }
+.badge-ontime  { background: #cce5ff; color: #004085; }
+.badge-late    { background: #fff3cd; color: #856404; }
+
+/* On-time button */
+.btn-ontime {
+    background-color: #2980b9;
+    color: #fff;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+}
+
+.btn-ontime:hover {
+    background-color: #2471a3;
+}
+
+/* Page date subtitle */
+.page-date {
+    font-size: 0.9rem;
+    color: #888;
+}
+
 /* ----- Hero Section (Homepage) ----- */
 .hero {
     text-align: center;

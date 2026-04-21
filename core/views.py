@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from .forms import RegisterForm, TaskForm
-from .models import Task
+from .models import Task, Prayer
 
 
 @login_required
@@ -87,3 +88,80 @@ def task_toggle(request, task_id):
         task.save()
 
     return redirect('core:task_list')
+
+
+# ===========================================================
+# Prayer Views
+# ===========================================================
+
+# The canonical order of the 5 daily prayers
+PRAYER_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
+
+
+@login_required
+def prayer_list(request):
+    """
+    Show today's 5 prayers for the logged-in user.
+    If any prayer record is missing for today, create it automatically.
+    This ensures the user always sees all 5 prayers without manual setup.
+    """
+    today = timezone.localdate()  # Use localdate so it respects TIME_ZONE setting
+
+    # Auto-create any missing prayer records for today using get_or_create.
+    # This is idempotent — safe to call on every page load.
+    for prayer_name in PRAYER_ORDER:
+        Prayer.objects.get_or_create(
+            user=request.user,
+            date=today,
+            prayer_name=prayer_name,
+            # defaults only applied when creating (not when getting existing record)
+            defaults={'completed': False, 'on_time': False},
+        )
+
+    # Fetch today's prayers and order them correctly (Fajr → Isha).
+    # Alphabetical DB ordering would be wrong, so we sort by PRAYER_ORDER index.
+    prayer_records = Prayer.objects.filter(user=request.user, date=today)
+    prayer_map = {p.prayer_name: p for p in prayer_records}
+    prayers = [prayer_map[name] for name in PRAYER_ORDER if name in prayer_map]
+
+    return render(request, 'prayers/prayer_list.html', {
+        'prayers': prayers,
+        'today': today,
+    })
+
+
+@login_required
+def prayer_toggle(request, prayer_id):
+    """
+    Toggle the completed status of a prayer (done ↔ missed).
+    POST only. Filters by user to prevent cross-user tampering.
+    If uncompleted, also resets on_time to False (can't be on-time if not done).
+    """
+    if request.method == 'POST':
+        prayer = get_object_or_404(Prayer, id=prayer_id, user=request.user)
+        prayer.completed = not prayer.completed
+
+        # If marking as not completed, on_time can no longer be true
+        if not prayer.completed:
+            prayer.on_time = False
+
+        prayer.save()
+
+    return redirect('core:prayer_list')
+
+
+@login_required
+def prayer_on_time_toggle(request, prayer_id):
+    """
+    Toggle the on_time status of a prayer.
+    POST only. Only allowed if the prayer is already marked completed.
+    """
+    if request.method == 'POST':
+        prayer = get_object_or_404(Prayer, id=prayer_id, user=request.user)
+
+        # Guard: on_time is only meaningful when the prayer is completed
+        if prayer.completed:
+            prayer.on_time = not prayer.on_time
+            prayer.save()
+
+    return redirect('core:prayer_list')
