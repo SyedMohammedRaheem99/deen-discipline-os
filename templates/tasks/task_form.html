@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}New Task — Deen & Discipline OS{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2 class="auth-title">New Task</h2>
+
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <p class="auth-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Save Task</button>
+        <a href="{% url 'core:task_list' %}" class="btn btn-cancel">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -9,4 +9,9 @@ urlpatterns = [
 
     # Custom registration view (login/logout are handled by django.contrib.auth.urls)
     path('register/', views.register, name='register'),
+
+    # Task management
+    path('tasks/', views.task_list, name='task_list'),
+    path('tasks/create/', views.task_create, name='task_create'),
+    path('tasks/toggle/<int:task_id>/', views.task_toggle, name='task_toggle'),
 ]

@@ -189,6 +189,132 @@ body {
     text-decoration: underline;
 }
 
+/* ----- Page Header (title + action button row) ----- */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.page-title {
+    font-size: 1.6rem;
+    color: #1a1a2e;
+}
+
+/* ----- Task List ----- */
+.task-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.task-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    border-left: 4px solid #1a1a2e;
+    transition: opacity 0.2s;
+}
+
+/* Completed tasks are visually subdued */
+.task-done {
+    opacity: 0.55;
+    border-left-color: #aaa;
+}
+
+.task-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+.task-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1a1a2e;
+}
+
+.task-done .task-title {
+    text-decoration: line-through;
+    color: #888;
+}
+
+.task-due {
+    font-size: 0.82rem;
+    color: #888;
+}
+
+.task-description {
+    font-size: 0.88rem;
+    color: #555;
+    margin-top: 0.2rem;
+}
+
+.task-actions {
+    flex-shrink: 0;
+}
+
+/* Complete / Undo buttons */
+.btn-complete {
+    background-color: #27ae60;
+    color: #fff;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+}
+
+.btn-complete:hover {
+    background-color: #219150;
+}
+
+.btn-undo {
+    background-color: #95a5a6;
+    color: #fff;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+}
+
+.btn-undo:hover {
+    background-color: #7f8c8d;
+}
+
+.btn-cancel {
+    background-color: #eee;
+    color: #333;
+    margin-top: 0.5rem;
+    display: block;
+    text-align: center;
+}
+
+.btn-cancel:hover {
+    background-color: #ddd;
+}
+
+/* ----- Empty State ----- */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #888;
+    font-size: 1rem;
+}
+
+.empty-state a {
+    color: #1a1a2e;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.empty-state a:hover {
+    text-decoration: underline;
+}
+
 /* ----- Hero Section (Homepage) ----- */
 .hero {
     text-align: center;

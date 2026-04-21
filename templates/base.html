@@ -20,7 +20,8 @@
 
             <div class="nav-links">
                 {% if request.user.is_authenticated %}
-                    {# Show username and logout when user is logged in #}
+                    {# Navigation links for logged-in users #}
+                    <a href="{% url 'core:task_list' %}" class="nav-link">Tasks</a>
                     <span class="nav-username">{{ request.user.username }}</span>
                     {# Logout requires POST in Django 5 — a plain <a> tag would cause HTTP 405 #}
                     <form method="post" action="{% url 'logout' %}" style="display:inline;">

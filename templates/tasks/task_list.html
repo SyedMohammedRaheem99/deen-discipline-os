@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}My Tasks — Deen & Discipline OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">My Tasks</h2>
+    <a href="{% url 'core:task_create' %}" class="btn btn-primary">+ New Task</a>
+</div>
+
+{% if tasks %}
+    <ul class="task-list">
+        {% for task in tasks %}
+        <li class="task-item {% if task.completed %}task-done{% endif %}">
+
+            <div class="task-info">
+                <span class="task-title">{{ task.title }}</span>
+
+                {% if task.due_time %}
+                    <span class="task-due">Due: {{ task.due_time|date:"M d, Y H:i" }}</span>
+                {% endif %}
+
+                {% if task.description %}
+                    <p class="task-description">{{ task.description }}</p>
+                {% endif %}
+            </div>
+
+            <div class="task-actions">
+                {# Toggle completion via POST — prevents accidental state changes via URL #}
+                <form method="post" action="{% url 'core:task_toggle' task.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn {% if task.completed %}btn-undo{% else %}btn-complete{% endif %}">
+                        {% if task.completed %}Undo{% else %}Done{% endif %}
+                    </button>
+                </form>
+            </div>
+
+        </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <div class="empty-state">
+        <p>No tasks yet. <a href="{% url 'core:task_create' %}">Create your first task</a>.</p>
+    </div>
+{% endif %}
+{% endblock %}
