@@ -1,5 +1,5 @@
 /* ============================================================
-   Deen & Discipline OS — Global Stylesheet
+   BarakahOS — Global Stylesheet
    ============================================================ */
 
 /* ----- CSS Reset & Base ----- */
@@ -55,6 +55,13 @@ body {
 
 .nav-link:hover {
     color: #e0c36a;
+}
+
+/* Active nav link — highlights the current page */
+.nav-link--active {
+    color: #e0c36a !important;
+    border-bottom: 2px solid #e0c36a;
+    padding-bottom: 2px;
 }
 
 .nav-username {
@@ -467,23 +474,50 @@ body {
     font-weight: 700;
 }
 
+.dashboard-subtitle {
+    color: #e0c36a;
+    font-size: 0.92rem;
+    margin-top: 0.15rem;
+    font-weight: 500;
+}
+
 .dashboard-date {
     color: #888;
-    font-size: 0.92rem;
-    margin-top: 0.2rem;
+    font-size: 0.85rem;
+    margin-top: 0.1rem;
 }
 
 /* Streak badge — shown in top-right of dashboard header */
 .streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
     background: #fff3cd;
     color: #856404;
     border: 1px solid #ffc107;
     border-radius: 50px;
-    padding: 0.45rem 1.1rem;
-    font-size: 0.95rem;
-    font-weight: 700;
+    padding: 0.5rem 1.2rem;
     white-space: nowrap;
     align-self: center;
+}
+
+.streak-fire {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.streak-count {
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #d97706;
+}
+
+.streak-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* ----- Discipline Score Card ----- */
@@ -619,6 +653,134 @@ body {
     color: #e0c36a;
 }
 
+/* ----- Weekly Summary ----- */
+.weekly-section {
+    margin-top: 2rem;
+    background: #fff;
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+}
+
+.weekly-title {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 1.2rem;
+}
+
+.weekly-grid {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.5rem;
+    height: 80px;
+}
+
+.weekly-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+}
+
+.weekly-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 60px;
+    width: 100%;
+    justify-content: center;
+}
+
+.weekly-bar {
+    width: 10px;
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;   /* Always visible even if value is 0 */
+    transition: height 0.3s ease;
+}
+
+.weekly-bar--prayer { background: #e0c36a; }
+.weekly-bar--task   { background: #1a1a2e; }
+
+.weekly-label {
+    font-size: 0.72rem;
+    color: #aaa;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.weekly-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.9rem;
+    font-size: 0.78rem;
+    color: #888;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.legend-dot--prayer { background: #e0c36a; }
+.legend-dot--task   { background: #1a1a2e; }
+
+/* ----- Micro UX — Transitions ----- */
+
+/* Cards lift slightly on hover */
+.dash-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.task-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s;
+}
+
+.task-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.09);
+}
+
+.prayer-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s;
+}
+
+.prayer-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.09);
+}
+
+/* Buttons — smooth color transitions */
+.btn {
+    transition: background-color 0.2s ease, color 0.2s ease,
+                transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+/* Dash card link arrow slides on hover */
+.dash-card-link {
+    transition: color 0.2s ease, letter-spacing 0.2s ease;
+}
+
+.dash-card-link:hover {
+    color: #e0c36a;
+    letter-spacing: 0.3px;
+}
+
 /* ----- Hero Section (Homepage) ----- */
 .hero {
     text-align: center;
@@ -667,38 +829,174 @@ body {
     margin: 0 auto;
 }
 
-/* ----- Responsive — basic mobile support ----- */
-@media (max-width: 600px) {
+/* ============================================================
+   RESPONSIVE — Mobile First
+   Breakpoints:
+     @media (max-width: 768px)  → tablets and small screens
+     @media (max-width: 480px)  → phones
+   ============================================================ */
+
+/* ----- Hamburger button — hidden on desktop ----- */
+.nav-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.nav-hamburger span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background-color: #ccc;
+    border-radius: 2px;
+    transition: all 0.25s ease;
+}
+
+/* Animate hamburger to X when active */
+.nav-hamburger--active span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+.nav-hamburger--active span:nth-child(2) {
+    opacity: 0;
+}
+.nav-hamburger--active span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ---- Tablet (768px and below) ---- */
+@media (max-width: 768px) {
+
+    /* Navbar */
+    .navbar {
+        padding: 0.9rem 1rem;
+    }
+
+    .nav-hamburger {
+        display: flex;  /* Show hamburger on mobile */
+    }
+
+    .nav-links {
+        display: none;  /* Hidden by default on mobile */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        width: 100%;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        margin-top: 0.5rem;
+    }
+
+    /* Shown when hamburger is clicked */
+    .nav-links.nav-open {
+        display: flex;
+    }
+
+    .nav-link,
+    .nav-username {
+        display: block;
+        width: 100%;
+        padding: 0.7rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        font-size: 0.97rem;
+    }
+
+    /* Nav logout button matches link layout on mobile */
+    .nav-logout-btn {
+        width: 100%;
+        text-align: left;
+        padding: 0.7rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        font-size: 0.97rem;
+    }
+
+    /* Logout form full width on mobile */
+    .nav-links form {
+        display: block !important;
+        width: 100%;
+    }
+
+    /* Nav container wraps to allow hamburger below brand */
     .nav-container {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Main content padding */
+    .main-content {
+        margin: 1.2rem auto;
+        padding: 0 1rem;
+    }
+
+    /* Page header stacks on small screens */
+    .page-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.8rem;
     }
 
-    .nav-links {
-        flex-wrap: wrap;
-        gap: 0.8rem;
+    .page-title {
+        font-size: 1.3rem;
     }
 
-    .dashboard-header {
-        flex-direction: column;
-    }
-
+    /* Dashboard */
     .dashboard-greeting {
         font-size: 1.3rem;
     }
 
-    .score-value {
-        font-size: 2.5rem;
+    .dashboard-header {
+        flex-direction: column;
+        gap: 0.8rem;
     }
 
+    /* Score card */
+    .score-card {
+        padding: 1.2rem 1rem;
+    }
+
+    .score-value {
+        font-size: 2.8rem;
+    }
+
+    .score-bar-bg {
+        max-width: 100%;
+    }
+
+    /* Dashboard cards: single column */
     .dashboard-cards {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
 
+    /* Task items: stack info and button */
+    .task-item {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .task-actions {
+        width: 100%;
+    }
+
+    .task-actions .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    /* Prayer items: stack vertically */
     .prayer-item {
         flex-direction: column;
         align-items: flex-start;
+        gap: 0.8rem;
+    }
+
+    .prayer-status {
+        flex-wrap: wrap;
     }
 
     .prayer-actions {
@@ -707,8 +1005,110 @@ body {
         gap: 0.5rem;
     }
 
+    .prayer-actions .btn {
+        flex: 1;
+        min-height: 44px;
+        text-align: center;
+    }
+
+    /* Auth forms */
     .auth-container {
         margin: 1rem;
         padding: 1.5rem;
+    }
+
+    /* Journal select full width on mobile */
+    .journal-form select {
+        max-width: 100%;
+    }
+
+    /* Buttons: comfortable touch targets */
+    .btn {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-complete,
+    .btn-undo,
+    .btn-ontime {
+        padding: 0.55rem 1rem;
+    }
+}
+
+/* ---- Phone (480px and below) ---- */
+@media (max-width: 480px) {
+
+    .nav-brand {
+        font-size: 1.1rem;
+    }
+
+    .dashboard-greeting {
+        font-size: 1.15rem;
+    }
+
+    .score-value {
+        font-size: 2.2rem;
+    }
+
+    .score-label {
+        font-size: 0.78rem;
+    }
+
+    .score-breakdown {
+        font-size: 0.75rem;
+    }
+
+    .dash-card {
+        padding: 1.1rem;
+    }
+
+    .dash-card-stat {
+        font-size: 2rem;
+    }
+
+    .prayer-name {
+        font-size: 1rem;
+    }
+
+    .auth-container {
+        margin: 0.5rem;
+        padding: 1.2rem;
+    }
+
+    .auth-title {
+        font-size: 1.3rem;
+    }
+
+    /* Stack prayer action buttons on very small screens */
+    .prayer-actions {
+        flex-direction: column;
+    }
+
+    .error-code {
+        font-size: 4rem;
+    }
+
+    .error-title {
+        font-size: 1.4rem;
+    }
+
+    /* Streak badge stacks under greeting on very small screens */
+    .streak-badge {
+        align-self: flex-start;
+    }
+
+    /* Weekly bars slightly narrower */
+    .weekly-bar {
+        width: 7px;
+    }
+
+    /* Active nav underline replaced by left border on mobile menu */
+    .nav-link--active {
+        border-bottom: none;
+        border-left: 3px solid #e0c36a;
+        padding-left: 0.5rem;
+        padding-bottom: 0;
     }
 }

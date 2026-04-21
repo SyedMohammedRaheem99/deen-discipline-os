@@ -105,6 +105,26 @@ def calculate_streak(user):
     return streak
 
 
+def get_weekly_summary(user, today):
+    """
+    Compute prayer and task completion totals for the last 7 days (including today).
+    Returns a list of 7 dicts — one per day — ordered oldest → newest.
+    Each dict: { 'label': 'Mon', 'prayers': int, 'tasks': int }
+    Used to render the weekly summary bar chart on the dashboard.
+    """
+    week = []
+    for days_back in range(6, -1, -1):   # 6 days ago → today
+        day = today - timedelta(days=days_back)
+        prayers_done = Prayer.objects.filter(user=user, date=day, completed=True).count()
+        tasks_done   = Task.objects.filter(user=user, created_at__date=day, completed=True).count()
+        week.append({
+            'label':   day.strftime('%a'),   # e.g. 'Mon'
+            'prayers': prayers_done,
+            'tasks':   tasks_done,
+        })
+    return week
+
+
 @login_required
 def home(request):
     """
@@ -136,6 +156,9 @@ def home(request):
     # Streak
     streak = calculate_streak(request.user)
 
+    # Weekly summary (last 7 days)
+    weekly_summary = get_weekly_summary(request.user, today)
+
     return render(request, 'dashboard.html', {
         'today':             today,
         'total_tasks':       total_tasks,
@@ -147,6 +170,7 @@ def home(request):
         'discipline_score':  discipline_score,
         'score_message':     score_message,
         'streak':            streak,
+        'weekly_summary':    weekly_summary,
     })
 
 

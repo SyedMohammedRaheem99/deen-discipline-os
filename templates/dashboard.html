@@ -1,20 +1,22 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard — Deen & Discipline OS{% endblock %}
+{% block title %}Dashboard — BarakahOS{% endblock %}
 
 {% block content %}
 
 <!-- ===== GREETING ===== -->
 <div class="dashboard-header">
     <div>
-        <h2 class="dashboard-greeting">Assalamu Alaikum, {{ request.user.username }} 🌙</h2>
+        <h2 class="dashboard-greeting">Assalamu Alaikum, {{ request.user.username }}</h2>
+        <p class="dashboard-subtitle">Let's build barakah into your day.</p>
         <p class="dashboard-date">{{ today|date:"l, F j, Y" }}</p>
     </div>
 
-    <!-- Streak badge — only shown when streak > 0 -->
     {% if streak > 0 %}
     <div class="streak-badge">
-        🔥 {{ streak }} day streak
+        <span class="streak-fire">🔥</span>
+        <span class="streak-count">{{ streak }}</span>
+        <span class="streak-label">day streak</span>
     </div>
     {% endif %}
 </div>
@@ -24,18 +26,16 @@
     <p class="score-label">Today's Discipline Score</p>
     <p class="score-value">{{ discipline_score }}<span class="score-max">/100</span></p>
 
-    <!-- Visual progress bar -->
     <div class="score-bar-bg">
         <div class="score-bar-fill" style="width: {{ discipline_score }}%;"></div>
     </div>
 
-    <!-- Contextual message based on score range -->
     <p class="score-message">{{ score_message }}</p>
 
     <p class="score-breakdown">
-        Prayers: {{ completed_prayers }}/5 &nbsp;|&nbsp;
-        On time: {{ ontime_prayers }}/5 &nbsp;|&nbsp;
-        Tasks: {{ completed_tasks }}/{{ total_tasks|default:"0" }}
+        Prayers {{ completed_prayers }}/5 &nbsp;&middot;&nbsp;
+        On time {{ ontime_prayers }}/5 &nbsp;&middot;&nbsp;
+        Tasks {{ completed_tasks }}/{{ total_tasks|default:"0" }}
     </p>
 </div>
 
@@ -45,60 +45,82 @@
     <!-- Tasks Card -->
     <div class="dash-card">
         <h3 class="dash-card-title">Tasks</h3>
-
         {% if total_tasks > 0 %}
-            <p class="dash-card-stat">{{ completed_tasks }} <span>/ {{ total_tasks }}</span></p>
+            <p class="dash-card-stat">{{ completed_tasks }}<span> / {{ total_tasks }}</span></p>
             <p class="dash-card-sub">completed today</p>
             {% if pending_tasks > 0 %}
-                <p class="dash-card-note">{{ pending_tasks }} still pending</p>
+                <p class="dash-card-note">{{ pending_tasks }} remaining</p>
             {% else %}
-                <p class="dash-card-note dash-card-success">All done!</p>
+                <p class="dash-card-note dash-card-success">All done ✓</p>
             {% endif %}
         {% else %}
-            <!-- Edge case: no tasks created today -->
-            <p class="dash-card-stat dash-card-empty">—</p>
-            <p class="dash-card-sub">no tasks today</p>
-            <p class="dash-card-note">Create a task to get started</p>
+            <p class="dash-card-stat dash-card-empty">0</p>
+            <p class="dash-card-sub">no tasks yet today</p>
+            <p class="dash-card-note">Plan your day — add a task</p>
         {% endif %}
-
-        <a href="{% url 'core:task_list' %}" class="dash-card-link">View Tasks →</a>
+        <a href="{% url 'core:task_list' %}" class="dash-card-link">
+            {% if total_tasks == 0 %}+ Add Task{% else %}View Tasks →{% endif %}
+        </a>
     </div>
 
     <!-- Prayers Card -->
     <div class="dash-card">
         <h3 class="dash-card-title">Prayers</h3>
-        <p class="dash-card-stat">{{ completed_prayers }} <span>/ 5</span></p>
+        <p class="dash-card-stat">{{ completed_prayers }}<span> / 5</span></p>
         <p class="dash-card-sub">completed today</p>
-
-        {% if ontime_prayers > 0 %}
+        {% if completed_prayers == 5 %}
+            <p class="dash-card-note dash-card-success">All 5 prayed ✓</p>
+        {% elif ontime_prayers > 0 %}
             <p class="dash-card-note dash-card-success">{{ ontime_prayers }} on time</p>
         {% else %}
-            <p class="dash-card-note">None on time yet</p>
+            <p class="dash-card-note">Mark your prayers</p>
         {% endif %}
-
         <a href="{% url 'core:prayer_list' %}" class="dash-card-link">View Prayers →</a>
     </div>
 
     <!-- Journal Card -->
     <div class="dash-card">
         <h3 class="dash-card-title">Journal</h3>
-
         {% if journal_entry %}
-            <p class="dash-card-stat">{{ journal_entry.rating }} <span>/ 10</span></p>
+            <p class="dash-card-stat">{{ journal_entry.rating }}<span> / 10</span></p>
             <p class="dash-card-sub">today's rating</p>
             <p class="dash-card-note dash-card-success">Entry written ✓</p>
         {% else %}
-            <!-- Edge case: no journal entry yet -->
             <p class="dash-card-stat dash-card-empty">—</p>
-            <p class="dash-card-sub">no entry yet</p>
-            <p class="dash-card-note">Reflect on your day</p>
+            <p class="dash-card-sub">nothing written yet</p>
+            <p class="dash-card-note">A few words go a long way</p>
         {% endif %}
-
         <a href="{% url 'core:journal_view' %}" class="dash-card-link">
-            {% if journal_entry %}View Journal →{% else %}Write Now →{% endif %}
+            {% if journal_entry %}Edit Entry →{% else %}Write Now →{% endif %}
         </a>
     </div>
 
+</div>
+
+<!-- ===== WEEKLY SUMMARY ===== -->
+<div class="weekly-section">
+    <h3 class="weekly-title">Last 7 Days</h3>
+    <div class="weekly-grid">
+        {% for day in weekly_summary %}
+        <div class="weekly-day">
+            <div class="weekly-bars">
+                <!-- Prayer bar: scale 0–5 mapped to 0–100% height -->
+                <div class="weekly-bar weekly-bar--prayer"
+                     style="height: {% widthratio day.prayers 5 100 %}%;"
+                     title="{{ day.prayers }}/5 prayers"></div>
+                <!-- Task bar: scale 0–5 capped (most users do 1–5 tasks/day) -->
+                <div class="weekly-bar weekly-bar--task"
+                     style="height: {% if day.tasks > 5 %}100{% else %}{% widthratio day.tasks 5 100 %}{% endif %}%;"
+                     title="{{ day.tasks }} tasks done"></div>
+            </div>
+            <span class="weekly-label">{{ day.label }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="weekly-legend">
+        <span class="legend-dot legend-dot--prayer"></span> Prayers &nbsp;
+        <span class="legend-dot legend-dot--task"></span> Tasks
+    </div>
 </div>
 
 {% endblock %}

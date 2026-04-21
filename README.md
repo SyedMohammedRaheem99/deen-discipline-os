@@ -1,4 +1,6 @@
-# Deen & Discipline OS
+# BarakahOS
+
+**Build Discipline. Earn Barakah.**
 
 A personal Islamic productivity and discipline system built with Django.
 Track your prayers, manage tasks, write daily reflections, and monitor your discipline score — all in one place.
