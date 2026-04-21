@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Error — Deen & Discipline OS</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">Deen &amp; Discipline OS</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="error-page">
+            <h1 class="error-code">500</h1>
+            <h2 class="error-title">Server Error</h2>
+            <p class="error-message">Something went wrong on our end. Please try again in a moment.</p>
+            <a href="/" class="btn btn-primary" style="display:inline-block; width:auto; margin-top:1rem;">
+                Return to Dashboard
+            </a>
+        </div>
+    </main>
+</body>
+</html>

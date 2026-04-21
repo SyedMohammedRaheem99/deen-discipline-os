@@ -6,6 +6,51 @@ from datetime import timedelta
 from .forms import RegisterForm, TaskForm, JournalForm
 from .models import Task, Prayer, Journal
 
+# Canonical prayer order — used in multiple views
+PRAYER_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
+
+
+# ===========================================================
+# Helper Functions
+# ===========================================================
+
+def ensure_todays_prayers(user, today):
+    """
+    Auto-create prayer records for today if they don't exist yet.
+    Uses get_or_create — safe to call multiple times (idempotent).
+    """
+    for prayer_name in PRAYER_ORDER:
+        Prayer.objects.get_or_create(
+            user=user,
+            date=today,
+            prayer_name=prayer_name,
+            defaults={'completed': False, 'on_time': False},
+        )
+
+
+def calculate_discipline_score(completed_prayers, ontime_prayers, completed_tasks, total_tasks):
+    """
+    Compute today's discipline score out of 100.
+
+    Breakdown:
+      - Prayers completed : +10 each  (max 50)
+      - Prayers on time   : +5 each   (max 25)
+      - Task completion % : scaled to 25 points (0 tasks = 0, not penalised)
+    """
+    prayer_score = completed_prayers * 10
+    ontime_score = ontime_prayers * 5
+    task_score   = int((completed_tasks / total_tasks) * 25) if total_tasks > 0 else 0
+    return prayer_score + ontime_score + task_score
+
+
+def get_score_message(score):
+    """Return a motivational message based on the discipline score."""
+    if score >= 80:
+        return 'Excellent discipline! Keep it up.'
+    elif score >= 50:
+        return 'Good progress. Keep improving.'
+    return 'Needs improvement. Stay consistent.'
+
 
 def calculate_streak(user):
     """
@@ -63,75 +108,45 @@ def calculate_streak(user):
 @login_required
 def home(request):
     """
-    Dashboard — the main homepage showing today's performance summary.
-    Computes tasks, prayers, journal, discipline score, and streak.
+    Dashboard — shows today's full performance summary for the logged-in user.
     """
     today = timezone.localdate()
 
-    # ---- Tasks ----
+    # Tasks
     today_tasks     = Task.objects.filter(user=request.user, created_at__date=today)
     total_tasks     = today_tasks.count()
     completed_tasks = today_tasks.filter(completed=True).count()
     pending_tasks   = total_tasks - completed_tasks
 
-    # ---- Prayers ----
-    # Auto-create today's prayer records if missing (idempotent)
-    for prayer_name in PRAYER_ORDER:
-        Prayer.objects.get_or_create(
-            user=request.user,
-            date=today,
-            prayer_name=prayer_name,
-            defaults={'completed': False, 'on_time': False},
-        )
-
+    # Prayers — auto-create records for today, then count
+    ensure_todays_prayers(request.user, today)
     today_prayers     = Prayer.objects.filter(user=request.user, date=today)
     completed_prayers = today_prayers.filter(completed=True).count()
     ontime_prayers    = today_prayers.filter(on_time=True).count()
 
-    # ---- Journal ----
+    # Journal
     journal_entry = Journal.objects.filter(user=request.user, date=today).first()
 
-    # ---- Discipline Score (out of 100) ----
-    # Prayers:  each completed = +10 (max 50), each on-time = +5 bonus (max 25)
-    # Tasks:    completion ratio scaled to 25 points; 0 tasks = 0 (not penalised)
-    prayer_score = completed_prayers * 10   # 0–50
-    ontime_score = ontime_prayers * 5       # 0–25
+    # Score & message
+    discipline_score = calculate_discipline_score(
+        completed_prayers, ontime_prayers, completed_tasks, total_tasks
+    )
+    score_message = get_score_message(discipline_score)
 
-    if total_tasks > 0:
-        # Proportional: e.g. 2 of 4 tasks done = 50% × 25 = 12 points
-        task_score = int((completed_tasks / total_tasks) * 25)
-    else:
-        task_score = 0  # No tasks today — neither rewarded nor penalised
-
-    discipline_score = prayer_score + ontime_score + task_score  # 0–100
-
-    # ---- Score Message ----
-    if discipline_score >= 80:
-        score_message = 'Excellent discipline! Keep it up.'
-    elif discipline_score >= 50:
-        score_message = 'Good progress. Keep improving.'
-    else:
-        score_message = 'Needs improvement. Stay consistent.'
-
-    # ---- Streak ----
+    # Streak
     streak = calculate_streak(request.user)
 
     return render(request, 'dashboard.html', {
-        'today': today,
-        # Tasks
-        'total_tasks':     total_tasks,
-        'completed_tasks': completed_tasks,
-        'pending_tasks':   pending_tasks,
-        # Prayers
+        'today':             today,
+        'total_tasks':       total_tasks,
+        'completed_tasks':   completed_tasks,
+        'pending_tasks':     pending_tasks,
         'completed_prayers': completed_prayers,
         'ontime_prayers':    ontime_prayers,
-        # Journal
-        'journal_entry': journal_entry,
-        # Score
-        'discipline_score': discipline_score,
-        'score_message':    score_message,
-        # Streak
-        'streak': streak,
+        'journal_entry':     journal_entry,
+        'discipline_score':  discipline_score,
+        'score_message':     score_message,
+        'streak':            streak,
     })
 
 
@@ -214,32 +229,17 @@ def task_toggle(request, task_id):
 # Prayer Views
 # ===========================================================
 
-# The canonical order of the 5 daily prayers
-PRAYER_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
-
-
 @login_required
 def prayer_list(request):
     """
     Show today's 5 prayers for the logged-in user.
-    If any prayer record is missing for today, create it automatically.
-    This ensures the user always sees all 5 prayers without manual setup.
+    Auto-creates any missing records, then orders them Fajr → Isha.
     """
-    today = timezone.localdate()  # Use localdate so it respects TIME_ZONE setting
+    today = timezone.localdate()
 
-    # Auto-create any missing prayer records for today using get_or_create.
-    # This is idempotent — safe to call on every page load.
-    for prayer_name in PRAYER_ORDER:
-        Prayer.objects.get_or_create(
-            user=request.user,
-            date=today,
-            prayer_name=prayer_name,
-            # defaults only applied when creating (not when getting existing record)
-            defaults={'completed': False, 'on_time': False},
-        )
+    ensure_todays_prayers(request.user, today)
 
-    # Fetch today's prayers and order them correctly (Fajr → Isha).
-    # Alphabetical DB ordering would be wrong, so we sort by PRAYER_ORDER index.
+    # Build ordered list — DB ordering is alphabetical which would be wrong
     prayer_records = Prayer.objects.filter(user=request.user, date=today)
     prayer_map = {p.prayer_name: p for p in prayer_records}
     prayers = [prayer_map[name] for name in PRAYER_ORDER if name in prayer_map]

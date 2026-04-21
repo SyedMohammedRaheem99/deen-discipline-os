@@ -22,9 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-y(#u6zb_l-nr2&h0l0lh_ex*x_a9!*otdhkxj&vs_*2@ajwl1h'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: set DEBUG = False in production and configure ALLOWED_HOSTS
 DEBUG = True
 
+# In production: ALLOWED_HOSTS = ['yourdomain.com', 'www.yourdomain.com']
 ALLOWED_HOSTS = []
 
 
@@ -121,8 +122,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Global static files directory at project root (BASE_DIR/static/)
-# This is where you put your custom CSS, JS, and images
+# Where collectstatic gathers all static files for production serving
+# Run: python manage.py collectstatic before deploying
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Additional directories Django looks in during development
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Default primary key field type

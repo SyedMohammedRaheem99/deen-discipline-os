@@ -638,3 +638,77 @@ body {
     margin: 0 auto;
     line-height: 1.7;
 }
+
+/* ----- Error Pages (404 / 500) ----- */
+.error-page {
+    text-align: center;
+    padding: 5rem 1rem;
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: 800;
+    color: #1a1a2e;
+    line-height: 1;
+    opacity: 0.15;
+}
+
+.error-title {
+    font-size: 1.8rem;
+    color: #1a1a2e;
+    margin-top: -1rem;
+    margin-bottom: 0.8rem;
+}
+
+.error-message {
+    color: #666;
+    font-size: 1rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* ----- Responsive — basic mobile support ----- */
+@media (max-width: 600px) {
+    .nav-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+
+    .nav-links {
+        flex-wrap: wrap;
+        gap: 0.8rem;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+    }
+
+    .dashboard-greeting {
+        font-size: 1.3rem;
+    }
+
+    .score-value {
+        font-size: 2.5rem;
+    }
+
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .prayer-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .prayer-actions {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .auth-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+}
