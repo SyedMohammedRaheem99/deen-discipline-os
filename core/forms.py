@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Task
+from .models import Task, Journal
 
 
 class RegisterForm(UserCreationForm):
@@ -45,3 +45,20 @@ class TaskForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Tell Django to parse datetime-local format from the browser
         self.fields['due_time'].input_formats = ['%Y-%m-%dT%H:%M']
+
+
+class JournalForm(forms.ModelForm):
+    """
+    Form for creating or updating a daily journal entry.
+    'user' and 'date' are excluded — both are set in the view automatically.
+    """
+    class Meta:
+        model = Journal
+        fields = ('content', 'rating')
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'rows': 10,
+                'placeholder': 'Write your reflection for today...',
+            }),
+            'rating': forms.Select(),
+        }

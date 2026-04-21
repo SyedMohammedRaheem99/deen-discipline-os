@@ -19,4 +19,8 @@ urlpatterns = [
     path('prayers/', views.prayer_list, name='prayer_list'),
     path('prayers/toggle/<int:prayer_id>/', views.prayer_toggle, name='prayer_toggle'),
     path('prayers/on-time/<int:prayer_id>/', views.prayer_on_time_toggle, name='prayer_on_time_toggle'),
+
+    # Daily journal
+    path('journal/', views.journal_view, name='journal_view'),
+    path('journal/save/', views.journal_save, name='journal_save'),
 ]

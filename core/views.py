@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .forms import RegisterForm, TaskForm
-from .models import Task, Prayer
+from .forms import RegisterForm, TaskForm, JournalForm
+from .models import Task, Prayer, Journal
 
 
 @login_required
@@ -165,3 +165,65 @@ def prayer_on_time_toggle(request, prayer_id):
             prayer.save()
 
     return redirect('core:prayer_list')
+
+
+# ===========================================================
+# Journal Views
+# ===========================================================
+
+@login_required
+def journal_view(request):
+    """
+    Display today's journal entry for the logged-in user.
+    - If an entry exists → pre-fill the form with existing content and rating.
+    - If no entry yet → show a blank form.
+    The save action is handled separately at /journal/save/.
+    """
+    today = timezone.localdate()
+
+    # Try to fetch today's entry — None if it doesn't exist yet
+    entry = Journal.objects.filter(user=request.user, date=today).first()
+
+    # Pre-fill form with existing data if an entry exists, otherwise empty form
+    form = JournalForm(instance=entry)
+
+    return render(request, 'journal/journal.html', {
+        'form': form,
+        'entry': entry,   # Used in template to know if we're editing or creating
+        'today': today,
+    })
+
+
+@login_required
+def journal_save(request):
+    """
+    Create or update today's journal entry.
+    POST only. Uses update_or_create to handle both cases cleanly:
+    - First save of the day → creates a new Journal record.
+    - Subsequent saves → updates the existing record.
+    """
+    if request.method != 'POST':
+        return redirect('core:journal_view')
+
+    today = timezone.localdate()
+    form = JournalForm(request.POST)
+
+    if form.is_valid():
+        # update_or_create: find by (user, date), update with new values if found
+        Journal.objects.update_or_create(
+            user=request.user,
+            date=today,
+            defaults={
+                'content': form.cleaned_data['content'],
+                'rating':  form.cleaned_data['rating'],
+            },
+        )
+        return redirect('core:journal_view')
+
+    # If form is invalid, re-render with errors
+    entry = Journal.objects.filter(user=request.user, date=today).first()
+    return render(request, 'journal/journal.html', {
+        'form': form,
+        'entry': entry,
+        'today': today,
+    })

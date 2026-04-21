@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Journal — Deen & Discipline OS{% endblock %}
+
+{% block content %}
+<div class="journal-container">
+
+    <div class="page-header">
+        <h2 class="page-title">Daily Journal</h2>
+        <span class="page-date">{{ today|date:"l, F j, Y" }}</span>
+    </div>
+
+    {% if entry %}
+        <p class="journal-status">You have written today's entry. You can update it below.</p>
+    {% else %}
+        <p class="journal-status">No entry yet today. Write your reflection below.</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'core:journal_save' %}" class="journal-form">
+        {% csrf_token %}
+
+        <!-- Content field -->
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}">Reflection</label>
+            {{ form.content }}
+            {% if form.content.errors %}
+                {% for error in form.content.errors %}
+                    <p class="auth-error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Rating field -->
+        <div class="form-group">
+            <label for="{{ form.rating.id_for_label }}">How was your day? (1 = Poor, 10 = Excellent)</label>
+            {{ form.rating }}
+            {% if form.rating.errors %}
+                {% for error in form.rating.errors %}
+                    <p class="auth-error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            {% if entry %}Update Entry{% else %}Save Entry{% endif %}
+        </button>
+    </form>
+
+</div>
+{% endblock %}

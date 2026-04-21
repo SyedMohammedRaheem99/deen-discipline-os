@@ -391,6 +391,54 @@ body {
     color: #888;
 }
 
+/* ----- Journal ----- */
+.journal-container {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.journal-status {
+    color: #666;
+    font-size: 0.92rem;
+    margin-bottom: 1.2rem;
+}
+
+.journal-form .form-group {
+    margin-bottom: 1.4rem;
+}
+
+.journal-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.journal-form textarea,
+.journal-form select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.97rem;
+    font-family: inherit;
+    line-height: 1.6;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.journal-form textarea:focus,
+.journal-form select:focus {
+    outline: none;
+    border-color: #1a1a2e;
+}
+
+.journal-form select {
+    max-width: 200px;
+    cursor: pointer;
+}
+
 /* ----- Hero Section (Homepage) ----- */
 .hero {
     text-align: center;

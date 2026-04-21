@@ -23,6 +23,7 @@
                     {# Navigation links for logged-in users #}
                     <a href="{% url 'core:task_list' %}" class="nav-link">Tasks</a>
                     <a href="{% url 'core:prayer_list' %}" class="nav-link">Prayers</a>
+                    <a href="{% url 'core:journal_view' %}" class="nav-link">Journal</a>
                     <span class="nav-username">{{ request.user.username }}</span>
                     {# Logout requires POST in Django 5 — a plain <a> tag would cause HTTP 405 #}
                     <form method="post" action="{% url 'logout' %}" style="display:inline;">

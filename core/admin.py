@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, Prayer
+from .models import Task, Prayer, Journal
 
 
 # ===========================================================
@@ -39,4 +39,24 @@ class PrayerAdmin(admin.ModelAdmin):
     search_fields = ('user__username',)
 
     # Most recent prayer entries at the top
+    ordering = ('-date',)
+
+
+# ===========================================================
+# Journal Admin
+# ===========================================================
+
+@admin.register(Journal)
+class JournalAdmin(admin.ModelAdmin):
+
+    # Columns shown in the journal list view
+    list_display = ('user', 'date', 'rating', 'created_at')
+
+    # Filter by rating or date
+    list_filter = ('rating', 'date')
+
+    # Search by username
+    search_fields = ('user__username',)
+
+    # Most recent entries at the top
     ordering = ('-date',)
