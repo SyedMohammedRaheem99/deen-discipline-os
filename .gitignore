@@ -1,17 +1,29 @@
-**pycache**/
-*.pyc
+# ── Python ─────────────────────────────────────────
+__pycache__/
+*.py[cod]
 
+# ── Django ─────────────────────────────────────────
+*.log
+*.sqlite3
 db.sqlite3
+staticfiles/
+media/
 
-.env
+# ── Virtual Environment ─────────────────────────────
 venv/
+.venv/
+env/
 
-# OS files
+# ── Environment Variables ───────────────────────────
+.env
+.env.*
 
+# ── IDE / Editor ───────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ─────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# VS Code
-
-.vscode/
-staticfiles/
