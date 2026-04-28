@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,13 +21,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y(#u6zb_l-nr2&h0l0lh_ex*x_a9!*otdhkxj&vs_*2@ajwl1h'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-y(#u6zb_l-nr2&h0l0lh_ex*x_a9!*otdhkxj&vs_*2@ajwl1h')
 
-# SECURITY WARNING: set DEBUG = False in production and configure ALLOWED_HOSTS
-DEBUG = True
+DEBUG = False
 
-# In production: ALLOWED_HOSTS = ['yourdomain.com', 'www.yourdomain.com']
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -45,6 +44,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -122,12 +122,18 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Where collectstatic gathers all static files for production serving
-# Run: python manage.py collectstatic before deploying
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Additional directories Django looks in during development
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -1,7 +1,16 @@
-__pycache__/
+**pycache**/
 *.pyc
+
 db.sqlite3
+
 .env
 venv/
-*.log
+
+# OS files
+
 .DS_Store
+Thumbs.db
+
+# VS Code
+
+.vscode/

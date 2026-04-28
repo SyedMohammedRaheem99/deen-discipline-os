@@ -1,46 +1,319 @@
 {% extends 'base.html' %}
-
-{% block title %}My Tasks — BarakahOS{% endblock %}
+{% block title %}Tasks — BarakahOS{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h2 class="page-title">My Tasks</h2>
-    <a href="{% url 'core:task_create' %}" class="btn btn-primary">+ New Task</a>
+
+<form id="csrf-form" style="display:none">{% csrf_token %}</form>
+
+<!-- Header -->
+<div class="page-actions" style="margin-bottom:20px">
+    <h1 class="page-title" style="margin-bottom:0">Tasks</h1>
+    <a href="{% url 'core:home' %}" class="btn btn-ghost btn-sm">← Today</a>
 </div>
 
-{% if tasks %}
-    <ul class="task-list">
-        {% for task in tasks %}
-        <li class="task-item {% if task.completed %}task-done{% endif %}">
-
-            <div class="task-info">
-                <span class="task-title">{{ task.title }}</span>
-
-                {% if task.due_time %}
-                    <span class="task-due">Due: {{ task.due_time|date:"M d, Y H:i" }}</span>
-                {% endif %}
-
-                {% if task.description %}
-                    <p class="task-description">{{ task.description }}</p>
-                {% endif %}
-            </div>
-
-            <div class="task-actions">
-                {# Toggle completion via POST — prevents accidental state changes via URL #}
-                <form method="post" action="{% url 'core:task_toggle' task.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn {% if task.completed %}btn-undo{% else %}btn-complete{% endif %}">
-                        {% if task.completed %}Undo{% else %}Done{% endif %}
-                    </button>
-                </form>
-            </div>
-
-        </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <div class="empty-state">
-        <p>No tasks yet. <a href="{% url 'core:task_create' %}">Create your first task</a>.</p>
+<!-- Quick Add -->
+<div class="card" style="margin-bottom:24px">
+    <div class="task-qa-bar">
+        <input type="text" id="qaInput" class="task-qa-input"
+               placeholder="What needs to be done?" maxlength="200" autocomplete="off">
+        <input type="datetime-local" id="qaDueTime" class="task-qa-datetime" title="Due date & time">
+        <select id="qaPriority" class="task-qa-select" title="Priority">
+            <option value="high">🔴 High</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+        </select>
+        <button class="btn btn-gold" onclick="quickAdd()">Add</button>
     </div>
-{% endif %}
+</div>
+
+
+<!-- ── TODAY ──────────────────────────────────────────────────── -->
+<div class="task-section" id="section-today">
+    <div class="task-section-hdr">
+        <span class="task-section-label">Today</span>
+        <span class="task-section-count" id="count-today">{{ today_tasks.count }}</span>
+    </div>
+    <div class="card" style="padding:8px 0">
+        <div id="today-list">
+            {% for task in today_tasks %}
+            <div class="task-row" id="task-{{ task.id }}">
+                <button class="task-cb" title="Complete"
+                        onclick="toggleTask({{ task.id }}, '{% url 'core:task_toggle' task.id %}', 'today')"></button>
+                <div class="task-body">
+                    <div class="task-name">{{ task.title }}</div>
+                    {% if task.due_time %}
+                    <div class="task-due-label {% if task.due_time.date < today %}task-due-label--overdue{% endif %}">
+                        {{ task.due_time|date:"M d · H:i" }}
+                        {% if task.due_time.date < today %} · Overdue{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="task-right">
+                    <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                    <button class="task-del" title="Delete"
+                            onclick="deleteTask({{ task.id }}, '{% url 'core:task_delete' task.id %}')">×</button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="task-section-empty" id="today-empty">All clear for today. ✓</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+<!-- ── UPCOMING ───────────────────────────────────────────────── -->
+<div class="task-section" id="section-upcoming" {% if not upcoming_tasks %}style="display:none"{% endif %}>
+    <div class="task-section-hdr">
+        <span class="task-section-label">Upcoming</span>
+        <span class="task-section-count" id="count-upcoming">{{ upcoming_tasks.count }}</span>
+    </div>
+    <div class="card" style="padding:8px 0">
+        <div id="upcoming-list">
+            {% for task in upcoming_tasks %}
+            <div class="task-row" id="task-{{ task.id }}">
+                <button class="task-cb" title="Complete"
+                        onclick="toggleTask({{ task.id }}, '{% url 'core:task_toggle' task.id %}', 'upcoming')"></button>
+                <div class="task-body">
+                    <div class="task-name">{{ task.title }}</div>
+                    {% if task.due_time %}
+                    <div class="task-due-label">{{ task.due_time|date:"M d · H:i" }}</div>
+                    {% endif %}
+                </div>
+                <div class="task-right">
+                    <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                    <button class="task-del" title="Delete"
+                            onclick="deleteTask({{ task.id }}, '{% url 'core:task_delete' task.id %}')">×</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+<!-- ── COMPLETED ──────────────────────────────────────────────── -->
+<div class="task-section">
+    <div class="task-section-hdr task-section-hdr--clickable" onclick="toggleCompleted()">
+        <span class="task-section-label">Completed</span>
+        <span class="task-section-count" id="count-completed">{{ completed_tasks.count }}</span>
+        <span class="task-section-chevron" id="completed-chevron">▾</span>
+    </div>
+    <div class="completed-body" id="completed-body" style="display:none">
+        <div class="card" style="padding:8px 0">
+            <div id="completed-list">
+                {% for task in completed_tasks %}
+                <div class="task-row" id="task-{{ task.id }}">
+                    <button class="task-cb task-cb--done" title="Undo"
+                            onclick="toggleTask({{ task.id }}, '{% url 'core:task_toggle' task.id %}', 'completed')"></button>
+                    <div class="task-body">
+                        <div class="task-name task-name--done">{{ task.title }}</div>
+                        {% if task.due_time %}
+                        <div class="task-due-label">{{ task.due_time|date:"M d · H:i" }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="task-right">
+                        <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                        <button class="task-del" title="Delete"
+                                onclick="deleteTask({{ task.id }}, '{% url 'core:task_delete' task.id %}')">×</button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="task-section-empty" id="completed-empty">No completed tasks yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+const CSRF = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
+
+async function post(url, data) {
+    const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': CSRF,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(data),
+    });
+    return r.json();
+}
+
+function esc(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildRow(t) {
+    const duePart = t.due_time
+        ? `<div class="task-due-label">${esc(t.due_time)}</div>` : '';
+    const priorityLabels = { high: 'High', medium: 'Medium', low: 'Low' };
+    return `
+    <div class="task-row" id="task-${t.task_id}">
+        <button class="task-cb" title="Complete"
+                onclick="toggleTask(${t.task_id},'${t.toggle_url}','today')"></button>
+        <div class="task-body">
+            <div class="task-name">${esc(t.title)}</div>
+            ${duePart}
+        </div>
+        <div class="task-right">
+            <span class="badge badge-${esc(t.priority)}">${esc(priorityLabels[t.priority] || t.priority)}</span>
+            <button class="task-del" title="Delete"
+                    onclick="deleteTask(${t.task_id},'${t.delete_url}')">×</button>
+        </div>
+    </div>`;
+}
+
+// ── Quick Add ──────────────────────────────────────────────────
+async function quickAdd() {
+    const input    = document.getElementById('qaInput');
+    const priority = document.getElementById('qaPriority').value;
+    const dueTime  = document.getElementById('qaDueTime').value;
+    const title    = input.value.trim();
+    if (!title) { input.focus(); return; }
+
+    const payload = { title, priority };
+    if (dueTime) payload.due_time = dueTime;
+
+    const data = await post('{% url "core:task_quick_add" %}', payload);
+    if (!data.success) return;
+
+    // Tasks with a future due date go to Upcoming, rest go to Today
+    const targetList  = data.due_time && isFuture(dueTime) ? 'upcoming-list' : 'today-list';
+    const targetCount = data.due_time && isFuture(dueTime) ? 'upcoming'       : 'today';
+    const targetSec   = document.getElementById('section-upcoming');
+
+    const list  = document.getElementById(targetList);
+    const empty = document.getElementById(targetCount + '-empty');
+    if (empty) empty.remove();
+
+    list.insertAdjacentHTML('afterbegin', buildRow(data));
+    input.value = '';
+    document.getElementById('qaDueTime').value = '';
+    input.focus();
+    updateCount(targetCount, 1);
+
+    // Show upcoming section if it was hidden
+    if (targetCount === 'upcoming' && targetSec) targetSec.style.display = '';
+}
+
+function isFuture(dtLocalString) {
+    if (!dtLocalString) return false;
+    return new Date(dtLocalString) > new Date();
+}
+
+document.getElementById('qaInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') quickAdd();
+});
+
+// ── Toggle ────────────────────────────────────────────────────
+async function toggleTask(id, url, fromSection) {
+    const row = document.getElementById('task-' + id);
+    if (!row) return;
+
+    row.classList.add('task-row--completing');
+    const data = await post(url, {});
+    if (!data.success) { row.classList.remove('task-row--completing'); return; }
+
+    setTimeout(() => {
+        row.remove();
+
+        if (data.completed) {
+            // Move to completed list
+            const cList  = document.getElementById('completed-list');
+            const cEmpty = document.getElementById('completed-empty');
+            if (cEmpty) cEmpty.remove();
+
+            const completedRow = `
+            <div class="task-row" id="task-${data.task_id}">
+                <button class="task-cb task-cb--done" title="Undo"
+                        onclick="toggleTask(${data.task_id},'${data.toggle_url}','completed')"></button>
+                <div class="task-body">
+                    <div class="task-name task-name--done">${esc(data.title)}</div>
+                    ${data.due_time ? `<div class="task-due-label">${esc(data.due_time)}</div>` : ''}
+                </div>
+                <div class="task-right">
+                    <span class="badge badge-${data.priority}">${esc({high:'High',medium:'Medium',low:'Low'}[data.priority])}</span>
+                    <button class="task-del" title="Delete"
+                            onclick="deleteTask(${data.task_id},'${data.delete_url}')">×</button>
+                </div>
+            </div>`;
+            cList.insertAdjacentHTML('afterbegin', completedRow);
+
+            updateCount(fromSection, -1);
+            updateCount('completed', 1);
+            maybeEmpty(fromSection);
+        } else {
+            // Move back to today list
+            const tList  = document.getElementById('today-list');
+            const tEmpty = document.getElementById('today-empty');
+            if (tEmpty) tEmpty.remove();
+
+            tList.insertAdjacentHTML('afterbegin', buildRow(data));
+            updateCount('completed', -1);
+            updateCount('today', 1);
+        }
+    }, 300);
+}
+
+// ── Delete ────────────────────────────────────────────────────
+async function deleteTask(id, url) {
+    if (!confirm('Delete this task?')) return;
+    const row = document.getElementById('task-' + id);
+    if (!row) return;
+
+    row.classList.add('task-row--completing');
+    const data = await post(url, {});
+    if (!data.success) { row.classList.remove('task-row--completing'); return; }
+
+    // Detect which section the row is in
+    const section = row.closest('#today-list') ? 'today'
+                  : row.closest('#upcoming-list') ? 'upcoming'
+                  : row.closest('#completed-list') ? 'completed' : null;
+
+    setTimeout(() => {
+        row.remove();
+        if (section) { updateCount(section, -1); maybeEmpty(section); }
+    }, 250);
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function updateCount(section, delta) {
+    const el = document.getElementById('count-' + section);
+    if (!el) return;
+    el.textContent = Math.max(0, parseInt(el.textContent || 0) + delta);
+}
+
+function maybeEmpty(section) {
+    const list = document.getElementById(section + '-list');
+    if (!list) return;
+    if (list.querySelectorAll('.task-row').length === 0) {
+        const msgs = { today: 'All clear for today. ✓', upcoming: 'No upcoming tasks.', completed: 'No completed tasks yet.' };
+        list.insertAdjacentHTML('beforeend',
+            `<div class="task-section-empty" id="${section}-empty">${msgs[section] || ''}</div>`);
+    }
+    if (section === 'upcoming') {
+        const sec = document.getElementById('section-upcoming');
+        const count = list.querySelectorAll('.task-row').length;
+        if (sec) sec.style.display = count === 0 ? 'none' : '';
+    }
+}
+
+// ── Completed collapse ────────────────────────────────────────
+function toggleCompleted() {
+    const body    = document.getElementById('completed-body');
+    const chevron = document.getElementById('completed-chevron');
+    const isOpen  = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    chevron.classList.toggle('is-open', !isOpen);
+}
+</script>
 {% endblock %}

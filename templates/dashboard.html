@@ -1,126 +1,437 @@
 {% extends 'base.html' %}
-
-{% block title %}Dashboard — BarakahOS{% endblock %}
+{% block title %}Today — BarakahOS{% endblock %}
 
 {% block content %}
 
-<!-- ===== GREETING ===== -->
-<div class="dashboard-header">
-    <div>
-        <h2 class="dashboard-greeting">Assalamu Alaikum, {{ request.user.username }}</h2>
-        <p class="dashboard-subtitle">Let's build barakah into your day.</p>
-        <p class="dashboard-date">{{ today|date:"l, F j, Y" }}</p>
+{# Hidden CSRF token accessible to all JS on this page #}
+<form id="csrf-holder" style="display:none">{% csrf_token %}</form>
+
+<!-- ── PAGE HEADER ───────────────────────────────────────── -->
+<div class="page-header">
+    <div class="page-header__greeting">
+        {{ greeting }}, {{ request.user.username }}.
     </div>
+    <div class="page-header__sub">{{ today|date:"l, F j" }}</div>
 
     {% if streak > 0 %}
-    <div class="streak-badge">
-        <span class="streak-fire">🔥</span>
-        <span class="streak-count">{{ streak }}</span>
-        <span class="streak-label">day streak</span>
-    </div>
+        <div class="streak-badge">🔥 {{ streak }} Day Streak</div>
+    {% else %}
+        <div class="streak-badge streak-badge--zero">Start your streak today</div>
     {% endif %}
 </div>
 
-<!-- ===== DISCIPLINE SCORE ===== -->
-<div class="score-card">
-    <p class="score-label">Today's Discipline Score</p>
-    <p class="score-value">{{ discipline_score }}<span class="score-max">/100</span></p>
 
-    <div class="score-bar-bg">
-        <div class="score-bar-fill" style="width: {{ discipline_score }}%;"></div>
+<!-- ── TOP GRID: SCORE + JOURNAL ─────────────────────────── -->
+<div class="top-grid">
+
+    <!-- Score Card -->
+    <div class="card score-card">
+        <div class="card-title" style="margin-bottom:16px">Discipline Score</div>
+        <div class="score-number">{{ discipline_score }}</div>
+        <div class="score-bar-track">
+            <div class="score-bar-fill" style="width:{{ discipline_score }}%"></div>
+        </div>
+        <div class="score-message">{{ score_message }}</div>
+        <div class="score-breakdown">
+            <div class="score-pill">Prayers <span>{{ completed_prayers }}/5</span></div>
+            <div class="score-pill">On-time <span>{{ ontime_prayers }}/5</span></div>
+            <div class="score-pill">Tasks <span>{{ completed_tasks_count }}/{{ total_tasks_count }}</span></div>
+        </div>
     </div>
 
-    <p class="score-message">{{ score_message }}</p>
-
-    <p class="score-breakdown">
-        Prayers {{ completed_prayers }}/5 &nbsp;&middot;&nbsp;
-        On time {{ ontime_prayers }}/5 &nbsp;&middot;&nbsp;
-        Tasks {{ completed_tasks }}/{{ total_tasks|default:"0" }}
-    </p>
-</div>
-
-<!-- ===== SUMMARY CARDS ===== -->
-<div class="dashboard-cards">
-
-    <!-- Tasks Card -->
-    <div class="dash-card">
-        <h3 class="dash-card-title">Tasks</h3>
-        {% if total_tasks > 0 %}
-            <p class="dash-card-stat">{{ completed_tasks }}<span> / {{ total_tasks }}</span></p>
-            <p class="dash-card-sub">completed today</p>
-            {% if pending_tasks > 0 %}
-                <p class="dash-card-note">{{ pending_tasks }} remaining</p>
-            {% else %}
-                <p class="dash-card-note dash-card-success">All done ✓</p>
-            {% endif %}
-        {% else %}
-            <p class="dash-card-stat dash-card-empty">0</p>
-            <p class="dash-card-sub">no tasks yet today</p>
-            <p class="dash-card-note">Plan your day — add a task</p>
-        {% endif %}
-        <a href="{% url 'core:task_list' %}" class="dash-card-link">
-            {% if total_tasks == 0 %}+ Add Task{% else %}View Tasks →{% endif %}
-        </a>
-    </div>
-
-    <!-- Prayers Card -->
-    <div class="dash-card">
-        <h3 class="dash-card-title">Prayers</h3>
-        <p class="dash-card-stat">{{ completed_prayers }}<span> / 5</span></p>
-        <p class="dash-card-sub">completed today</p>
-        {% if completed_prayers == 5 %}
-            <p class="dash-card-note dash-card-success">All 5 prayed ✓</p>
-        {% elif ontime_prayers > 0 %}
-            <p class="dash-card-note dash-card-success">{{ ontime_prayers }} on time</p>
-        {% else %}
-            <p class="dash-card-note">Mark your prayers</p>
-        {% endif %}
-        <a href="{% url 'core:prayer_list' %}" class="dash-card-link">View Prayers →</a>
-    </div>
-
-    <!-- Journal Card -->
-    <div class="dash-card">
-        <h3 class="dash-card-title">Journal</h3>
+    <!-- Journal Status Card -->
+    <div class="card journal-card">
+        <div class="card-title" style="margin-bottom:16px">Journal</div>
         {% if journal_entry %}
-            <p class="dash-card-stat">{{ journal_entry.rating }}<span> / 10</span></p>
-            <p class="dash-card-sub">today's rating</p>
-            <p class="dash-card-note dash-card-success">Entry written ✓</p>
+            <div class="journal-status journal-status--done">✓ Written today</div>
+            <div class="journal-rating">Rating: {{ journal_entry.rating }}/10</div>
         {% else %}
-            <p class="dash-card-stat dash-card-empty">—</p>
-            <p class="dash-card-sub">nothing written yet</p>
-            <p class="dash-card-note">A few words go a long way</p>
+            <div class="journal-status">Reflect your day</div>
+            <div class="journal-prompt">Take a moment to capture today's thoughts and intentions.</div>
         {% endif %}
-        <a href="{% url 'core:journal_view' %}" class="dash-card-link">
-            {% if journal_entry %}Edit Entry →{% else %}Write Now →{% endif %}
+        <a href="{% url 'core:journal_view' %}" class="btn btn-ghost btn-sm">
+            {% if journal_entry %}Edit entry{% else %}Write now{% endif %}
         </a>
     </div>
 
 </div>
 
-<!-- ===== WEEKLY SUMMARY ===== -->
-<div class="weekly-section">
-    <h3 class="weekly-title">Last 7 Days</h3>
-    <div class="weekly-grid">
-        {% for day in weekly_summary %}
-        <div class="weekly-day">
-            <div class="weekly-bars">
-                <!-- Prayer bar: scale 0–5 mapped to 0–100% height -->
-                <div class="weekly-bar weekly-bar--prayer"
-                     style="height: {% widthratio day.prayers 5 100 %}%;"
-                     title="{{ day.prayers }}/5 prayers"></div>
-                <!-- Task bar: scale 0–5 capped (most users do 1–5 tasks/day) -->
-                <div class="weekly-bar weekly-bar--task"
-                     style="height: {% if day.tasks > 5 %}100{% else %}{% widthratio day.tasks 5 100 %}{% endif %}%;"
-                     title="{{ day.tasks }} tasks done"></div>
+
+<!-- ── PRAYERS ────────────────────────────────────────────── -->
+<div class="card" id="prayers-card">
+    <div class="card-header">
+        <div class="card-title">Prayers</div>
+        <div class="card-meta" id="prayer-count">{{ completed_prayers }}/5 done</div>
+    </div>
+
+    <!-- Progress dots -->
+    <div class="prayer-progress" id="prayer-dots">
+        {% for prayer in today_prayers %}
+            <div class="prayer-dot {% if prayer.completed %}{% if prayer.on_time %}prayer-dot--ontime{% else %}prayer-dot--done{% endif %}{% endif %}"
+                 data-prayer-id="{{ prayer.id }}"></div>
+        {% endfor %}
+    </div>
+
+    <div class="prayer-list-items">
+        {% for prayer in today_prayers %}
+        <div class="prayer-row {% if prayer.completed %}prayer-row--done{% endif %}" id="prayer-row-{{ prayer.id }}">
+            <div class="prayer-indicator {% if prayer.completed %}prayer-indicator--done{% endif %}"
+                 id="prayer-dot-indicator-{{ prayer.id }}"></div>
+            <div class="prayer-name">{{ prayer.get_prayer_name_display }}</div>
+            <div class="prayer-actions">
+                <button
+                    class="btn btn-sm {% if prayer.completed %}btn-green{% else %}btn-ghost{% endif %}"
+                    id="prayer-btn-{{ prayer.id }}"
+                    onclick="togglePrayer({{ prayer.id }}, '{% url 'core:prayer_toggle' prayer.id %}')"
+                >
+                    {% if prayer.completed %}✓ Done{% else %}Pray{% endif %}
+                </button>
+                {% if prayer.completed %}
+                <button
+                    class="btn btn-sm {% if prayer.on_time %}btn-blue{% else %}btn-ghost{% endif %}"
+                    id="ontime-btn-{{ prayer.id }}"
+                    onclick="toggleOnTime({{ prayer.id }}, '{% url 'core:prayer_on_time_toggle' prayer.id %}')"
+                >
+                    {% if prayer.on_time %}On Time{% else %}Late{% endif %}
+                </button>
+                {% else %}
+                <button class="btn btn-sm btn-ghost" id="ontime-btn-{{ prayer.id }}" style="visibility:hidden">Late</button>
+                {% endif %}
             </div>
-            <span class="weekly-label">{{ day.label }}</span>
         </div>
         {% endfor %}
     </div>
-    <div class="weekly-legend">
-        <span class="legend-dot legend-dot--prayer"></span> Prayers &nbsp;
-        <span class="legend-dot legend-dot--task"></span> Tasks
+</div>
+
+
+<!-- ── TASKS ──────────────────────────────────────────────── -->
+<div class="card" id="tasks-card">
+    <div class="card-header">
+        <div class="card-title">Tasks</div>
+        <div class="card-meta" id="task-count">{{ completed_tasks_count }}/{{ total_tasks_count }} done</div>
+    </div>
+
+    <!-- Quick add -->
+    <div class="task-quick-add">
+        <input type="text" id="quickAddInput" placeholder="Add a task..."
+               maxlength="200" autocomplete="off">
+        <button class="btn btn-gold btn-icon-lg" onclick="quickAddTask()" title="Add task">+</button>
+    </div>
+
+    <div class="task-list-items" id="task-list">
+        {% for task in display_tasks %}
+        <div class="task-item" id="task-item-{{ task.id }}">
+            <button
+                class="task-check {% if task.completed %}task-check--done{% endif %}"
+                onclick="toggleTask({{ task.id }}, '{% url 'core:task_toggle' task.id %}')"
+                id="task-check-{{ task.id }}"
+                title="Toggle task"
+            ></button>
+            <div class="task-title {% if task.completed %}task-title--done{% endif %}"
+                 id="task-title-{{ task.id }}">{{ task.title }}</div>
+        </div>
+        {% empty %}
+        <div class="task-empty" id="task-empty">No tasks yet. Add something above.</div>
+        {% endfor %}
     </div>
 </div>
 
+
+<!-- ── SPIRITUAL ──────────────────────────────────────────── -->
+<div class="card">
+    <div class="card-title" style="margin-bottom:16px">Spiritual Reminders</div>
+
+    <div class="spiritual-grid">
+        <div class="spiritual-item {% if is_morning %}spiritual-item--active{% endif %}">
+            <div class="spiritual-time">☀ Morning</div>
+            <div class="spiritual-surah">Surah Yaseen</div>
+            <div class="spiritual-benefit">Whoever reads Yaseen in the morning, Allah fulfills their needs that day.</div>
+        </div>
+        <div class="spiritual-item {% if not is_morning %}spiritual-item--active{% endif %}">
+            <div class="spiritual-time">🌙 Night</div>
+            <div class="spiritual-surah">Surah Al-Waqiah</div>
+            <div class="spiritual-benefit">Whoever reads Al-Waqiah every night will never be afflicted by poverty.</div>
+        </div>
+    </div>
+
+    <div class="card-title" style="margin-bottom:12px">Daily Dhikr</div>
+    <div class="dhikr-list">
+        <div class="dhikr-row">
+            <div>
+                <div class="dhikr-arabic">سُبْحَانَ اللّٰهِ</div>
+                <div class="dhikr-transliteration">SubhanAllah</div>
+            </div>
+            <div class="dhikr-count">33×</div>
+        </div>
+        <div class="dhikr-row">
+            <div>
+                <div class="dhikr-arabic">اَلْحَمْدُ لِلّٰهِ</div>
+                <div class="dhikr-transliteration">Alhamdulillah</div>
+            </div>
+            <div class="dhikr-count">33×</div>
+        </div>
+        <div class="dhikr-row">
+            <div>
+                <div class="dhikr-arabic">اَللّٰهُ أَكْبَرُ</div>
+                <div class="dhikr-transliteration">Allahu Akbar</div>
+            </div>
+            <div class="dhikr-count">34×</div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ── HEALTH ─────────────────────────────────────────────── -->
+<div class="card">
+    <div class="card-title" style="margin-bottom:20px">Health</div>
+
+    <div class="health-grid">
+
+        <!-- Water -->
+        <div>
+            <div class="health-label">💧 Water Intake</div>
+            <div class="water-counter">
+                <button class="btn btn-ghost btn-icon"
+                        onclick="updateWater('decrement')" title="Remove glass">−</button>
+                <div>
+                    <div class="water-count" id="water-count">{{ health_log.water_count }}</div>
+                    <div class="water-sub">glasses</div>
+                </div>
+                <button class="btn btn-blue btn-icon"
+                        onclick="updateWater('increment')" title="Add glass">+</button>
+            </div>
+        </div>
+
+        <!-- Workout -->
+        <div>
+            <div class="health-label">🏃 Workout</div>
+            <button
+                id="workout-btn"
+                class="{% if health_log.workout_done %}btn-workout-done{% else %}btn-workout-todo{% endif %}"
+                onclick="toggleWorkout('{% url 'core:health_workout_toggle' %}')"
+            >
+                {% if health_log.workout_done %}✓ Done{% else %}Mark Done{% endif %}
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ── TODAY'S ANALYSIS ────────────────────────────────────── -->
+{% if flow_total > 0 %}
+<div class="card">
+    <div class="card-title" style="margin-bottom:20px">Today's Analysis</div>
+
+    <!-- Score + overall bar -->
+    <div class="analysis-score-row">
+        <div class="analysis-score">{{ flow_score }}</div>
+        <div class="analysis-score-meta">
+            <div class="analysis-score-label">Flow Score</div>
+            <div class="analysis-bar-track">
+                <div class="analysis-bar-fill" style="width:{{ flow_score }}%"></div>
+            </div>
+            <div class="analysis-insight">{{ flow_insight }}</div>
+        </div>
+    </div>
+
+    <!-- Category breakdown -->
+    <div class="analysis-breakdown">
+
+        <div class="analysis-row">
+            <div class="analysis-row-header">
+                <span class="analysis-row-dot analysis-row-dot--work"></span>
+                <span class="analysis-row-label">Deep Focus</span>
+                <span class="analysis-row-stat">{{ flow_work_done }}/{{ flow_work_total }}</span>
+                <span class="analysis-row-pct">{{ flow_work_pct }}%</span>
+            </div>
+            <div class="analysis-mini-track">
+                <div class="analysis-mini-fill analysis-mini-fill--work" style="width:{{ flow_work_pct }}%"></div>
+            </div>
+        </div>
+
+        <div class="analysis-row">
+            <div class="analysis-row-header">
+                <span class="analysis-row-dot analysis-row-dot--health"></span>
+                <span class="analysis-row-label">Move &amp; Stretch</span>
+                <span class="analysis-row-stat">{{ flow_health_done }}/{{ flow_health_total }}</span>
+                <span class="analysis-row-pct">{{ flow_health_pct }}%</span>
+            </div>
+            <div class="analysis-mini-track">
+                <div class="analysis-mini-fill analysis-mini-fill--health" style="width:{{ flow_health_pct }}%"></div>
+            </div>
+        </div>
+
+        <div class="analysis-row">
+            <div class="analysis-row-header">
+                <span class="analysis-row-dot analysis-row-dot--dhikr"></span>
+                <span class="analysis-row-label">Dhikr &amp; Reset</span>
+                <span class="analysis-row-stat">{{ flow_dhikr_done }}/{{ flow_dhikr_total }}</span>
+                <span class="analysis-row-pct">{{ flow_dhikr_pct }}%</span>
+            </div>
+            <div class="analysis-mini-track">
+                <div class="analysis-mini-fill analysis-mini-fill--dhikr" style="width:{{ flow_dhikr_pct }}%"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    const CSRF = document.querySelector('#csrf-holder [name=csrfmiddlewaretoken]').value;
+
+    async function post(url, data) {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify(data),
+        });
+        return r.json();
+    }
+
+    // ── Prayers ──────────────────────────────────────────────
+    async function togglePrayer(id, url) {
+        const data = await post(url, {});
+        if (!data.success) return;
+
+        const row       = document.getElementById('prayer-row-' + id);
+        const btn       = document.getElementById('prayer-btn-' + id);
+        const indicator = document.getElementById('prayer-dot-indicator-' + id);
+        const dotEl     = document.querySelector('.prayer-dot[data-prayer-id="' + id + '"]');
+        const ontimeBtn = document.getElementById('ontime-btn-' + id);
+
+        if (data.completed) {
+            row.classList.add('prayer-row--done');
+            btn.textContent = '✓ Done';
+            btn.className   = 'btn btn-sm btn-green';
+            indicator.classList.add('prayer-indicator--done');
+            dotEl.classList.add('prayer-dot--done');
+            ontimeBtn.style.visibility = 'visible';
+        } else {
+            row.classList.remove('prayer-row--done');
+            btn.textContent = 'Pray';
+            btn.className   = 'btn btn-sm btn-ghost';
+            indicator.classList.remove('prayer-indicator--done');
+            dotEl.classList.remove('prayer-dot--done', 'prayer-dot--ontime');
+            ontimeBtn.style.visibility = 'hidden';
+            ontimeBtn.textContent = 'Late';
+            ontimeBtn.className   = 'btn btn-sm btn-ghost';
+        }
+
+        document.getElementById('prayer-count').textContent = data.completed_count + '/5 done';
+    }
+
+    async function toggleOnTime(id, url) {
+        const data = await post(url, {});
+        if (!data.success) return;
+
+        const btn   = document.getElementById('ontime-btn-' + id);
+        const dotEl = document.querySelector('.prayer-dot[data-prayer-id="' + id + '"]');
+
+        if (data.on_time) {
+            btn.textContent = 'On Time';
+            btn.className   = 'btn btn-sm btn-blue';
+            dotEl.classList.remove('prayer-dot--done');
+            dotEl.classList.add('prayer-dot--ontime');
+        } else {
+            btn.textContent = 'Late';
+            btn.className   = 'btn btn-sm btn-ghost';
+            dotEl.classList.remove('prayer-dot--ontime');
+            dotEl.classList.add('prayer-dot--done');
+        }
+    }
+
+    // ── Tasks ─────────────────────────────────────────────────
+    async function toggleTask(id, url) {
+        const data = await post(url, {});
+        if (!data.success) return;
+
+        const checkEl = document.getElementById('task-check-' + id);
+        const titleEl = document.getElementById('task-title-' + id);
+
+        if (data.completed) {
+            checkEl.classList.add('task-check--done');
+            titleEl.classList.add('task-title--done');
+        } else {
+            checkEl.classList.remove('task-check--done');
+            titleEl.classList.remove('task-title--done');
+        }
+
+        updateTaskCount();
+    }
+
+    async function quickAddTask() {
+        const input = document.getElementById('quickAddInput');
+        const title = input.value.trim();
+        if (!title) { input.focus(); return; }
+
+        const data = await post('{% url "core:task_quick_add" %}', { title });
+        if (!data.success) return;
+
+        const empty = document.getElementById('task-empty');
+        if (empty) empty.remove();
+
+        const list = document.getElementById('task-list');
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        item.id = 'task-item-' + data.task_id;
+        item.innerHTML = `
+            <button class="task-check"
+                    onclick="toggleTask(${data.task_id}, '${data.toggle_url}')"
+                    id="task-check-${data.task_id}"
+                    title="Toggle task"></button>
+            <div class="task-title" id="task-title-${data.task_id}">${escapeHtml(data.title)}</div>
+        `;
+        list.insertBefore(item, list.firstChild);
+        input.value = '';
+        input.focus();
+
+        updateTaskCount();
+    }
+
+    document.getElementById('quickAddInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') quickAddTask();
+    });
+
+    function updateTaskCount() {
+        const items    = document.querySelectorAll('#task-list .task-item');
+        const done     = document.querySelectorAll('#task-list .task-check--done').length;
+        document.getElementById('task-count').textContent = done + '/' + items.length + ' done';
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Health ────────────────────────────────────────────────
+    async function updateWater(action) {
+        const data = await post('{% url "core:health_water_update" %}', { action });
+        if (data.success) {
+            document.getElementById('water-count').textContent = data.count;
+        }
+    }
+
+    async function toggleWorkout(url) {
+        const data = await post(url, {});
+        if (!data.success) return;
+
+        const btn = document.getElementById('workout-btn');
+        if (data.done) {
+            btn.className   = 'btn-workout-done';
+            btn.textContent = '✓ Done';
+        } else {
+            btn.className   = 'btn-workout-todo';
+            btn.textContent = 'Mark Done';
+        }
+    }
+</script>
 {% endblock %}

@@ -5,76 +5,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BarakahOS{% endblock %}</title>
-
-    <!-- Global stylesheet -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-    <!-- ===== NAVIGATION ===== -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="{% url 'core:home' %}" class="nav-brand">BarakahOS</a>
+<nav class="navbar">
+    <div class="nav-inner">
+        <a href="{% url 'core:home' %}" class="nav-brand">
+            <span class="nav-brand-icon">◆</span>
+            BarakahOS
+        </a>
 
-            <!-- Hamburger button — visible only on mobile via CSS -->
-            <button class="nav-hamburger" id="navToggle" aria-label="Toggle navigation">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
 
-            <div class="nav-links" id="navLinks">
-                {% if request.user.is_authenticated %}
-                    {# nav-link--active highlights the current page #}
-                    <a href="{% url 'core:task_list' %}"
-                       class="nav-link {% if '/tasks' in request.path %}nav-link--active{% endif %}">Tasks</a>
-                    <a href="{% url 'core:prayer_list' %}"
-                       class="nav-link {% if '/prayers' in request.path %}nav-link--active{% endif %}">Prayers</a>
-                    <a href="{% url 'core:journal_view' %}"
-                       class="nav-link {% if '/journal' in request.path %}nav-link--active{% endif %}">Journal</a>
-                    <span class="nav-username">{{ request.user.username }}</span>
-                    {# Logout requires POST in Django 5 — a plain <a> causes HTTP 405 #}
-                    <form method="post" action="{% url 'logout' %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="nav-link nav-logout-btn">Logout</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}"
-                       class="nav-link {% if '/login' in request.path %}nav-link--active{% endif %}">Login</a>
-                    <a href="{% url 'core:register' %}"
-                       class="nav-link {% if '/register' in request.path %}nav-link--active{% endif %}">Register</a>
-                {% endif %}
-            </div>
+        <div class="nav-links" id="navLinks">
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'core:home' %}"
+                   class="nav-link {% if request.path == '/' %}nav-link--active{% endif %}">Today</a>
+                <a href="{% url 'core:prayer_list' %}"
+                   class="nav-link {% if '/prayers' in request.path %}nav-link--active{% endif %}">Prayers</a>
+                <a href="{% url 'core:task_list' %}"
+                   class="nav-link {% if '/tasks' in request.path %}nav-link--active{% endif %}">Tasks</a>
+                <a href="{% url 'core:journal_view' %}"
+                   class="nav-link {% if '/journal' in request.path %}nav-link--active{% endif %}">Journal</a>
+                <a href="{% url 'core:flow' %}"
+                   class="nav-link {% if '/flow' in request.path %}nav-link--active{% endif %}">Flow</a>
+                <div class="nav-divider"></div>
+                <div class="nav-dropdown" id="userDropdown">
+                    <button class="nav-dropdown-trigger" id="userDropdownBtn">
+                        {{ request.user.username }}
+                        <span class="nav-dropdown-arrow">▾</span>
+                    </button>
+                    <div class="nav-dropdown-menu" id="userDropdownMenu" style="display:none">
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-dropdown-item">Sign out</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}"
+                   class="nav-link {% if '/login' in request.path %}nav-link--active{% endif %}">Login</a>
+                <a href="{% url 'core:register' %}"
+                   class="btn btn-gold btn-sm">Get Started</a>
+            {% endif %}
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <!-- ===== MAIN CONTENT ===== -->
-    <main class="main-content">
-        {% block content %}
-        {# Child templates fill this block #}
-        {% endblock %}
-    </main>
+<main class="page-main">
+    {% block content %}{% endblock %}
+</main>
 
-    <!-- ===== FOOTER ===== -->
-    <footer class="footer">
-        <p>&copy; BarakahOS &mdash; Build Discipline. Earn Barakah.</p>
-    </footer>
+<footer class="page-footer">
+    <p>BarakahOS &mdash; Build Discipline. Earn Barakah.</p>
+</footer>
 
-    {% block extra_js %}{% endblock %}
+{% block extra_js %}{% endblock %}
 
-    <!-- Hamburger menu toggle — minimal vanilla JS, no libraries -->
-    <script>
-        const toggle = document.getElementById('navToggle');
-        const navLinks = document.getElementById('navLinks');
-        if (toggle && navLinks) {
-            toggle.addEventListener('click', function () {
-                navLinks.classList.toggle('nav-open');
-                toggle.classList.toggle('nav-hamburger--active');
-            });
-        }
-    </script>
+<script>
+    // Mobile hamburger
+    const navToggle = document.getElementById('navToggle');
+    const navLinks  = document.getElementById('navLinks');
+    if (navToggle && navLinks) {
+        navToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('is-open');
+            navToggle.classList.toggle('is-active');
+        });
+    }
+
+    // User dropdown
+    const userDropdownBtn = document.getElementById('userDropdownBtn');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    const userDropdownEl = document.getElementById('userDropdown');
+    if (userDropdownBtn && userDropdownMenu) {
+        userDropdownBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var isOpen = userDropdownMenu.style.display === 'block';
+            userDropdownMenu.style.display = isOpen ? 'none' : 'block';
+            if (userDropdownEl) userDropdownEl.classList.toggle('is-open', !isOpen);
+        });
+        document.addEventListener('click', function() {
+            userDropdownMenu.style.display = 'none';
+            if (userDropdownEl) userDropdownEl.classList.remove('is-open');
+        });
+    }
+</script>
 
 </body>
 </html>

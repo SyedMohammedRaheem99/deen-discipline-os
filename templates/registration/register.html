@@ -1,36 +1,38 @@
 {% extends 'base.html' %}
-
 {% block title %}Register — BarakahOS{% endblock %}
 
 {% block content %}
-<div class="auth-container">
-    <h2 class="auth-title">Create Account</h2>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">◆ BarakahOS</div>
+        <div class="auth-tagline">Build Discipline. Earn Barakah.</div>
 
-    <form method="post" class="auth-form">
-        {% csrf_token %}
+        <div class="auth-title">Create your account</div>
 
-        {% for field in form %}
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
             <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
-
                 {% if field.errors %}
                     {% for error in field.errors %}
-                        <p class="auth-error">{{ error }}</p>
+                        <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 {% endif %}
-
                 {% if field.help_text %}
-                    <small class="form-help">{{ field.help_text }}</small>
+                    <div class="form-help">{{ field.help_text }}</div>
                 {% endif %}
             </div>
-        {% endfor %}
+            {% endfor %}
+            <div style="margin-top:8px">
+                <button type="submit" class="btn btn-gold btn-full btn-lg">Create Account</button>
+            </div>
+        </form>
 
-        <button type="submit" class="btn btn-primary">Create Account</button>
-    </form>
-
-    <p class="auth-switch">
-        Already have an account? <a href="{% url 'login' %}">Login here</a>
-    </p>
+        <div class="auth-footer">
+            Already have an account? <a href="{% url 'login' %}">Sign in</a>
+        </div>
+    </div>
 </div>
 {% endblock %}

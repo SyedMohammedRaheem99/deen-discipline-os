@@ -1,63 +1,60 @@
 {% extends 'base.html' %}
-
 {% block title %}Journal — BarakahOS{% endblock %}
 
 {% block content %}
-<div class="journal-container">
-
-    <div class="page-header">
-        <h2 class="page-title">Daily Journal</h2>
-        <span class="page-date">{{ today|date:"l, F j, Y" }}</span>
+<div style="max-width:560px">
+    <div class="page-actions" style="margin-bottom:24px">
+        <h1 class="page-title" style="margin-bottom:0">Daily Journal</h1>
+        <a href="{% url 'core:home' %}" class="btn btn-ghost btn-sm">← Today</a>
     </div>
 
-    {% if entry %}
-        <p class="journal-status">You have written today's entry. You can update it below.</p>
-    {% else %}
-        <p class="journal-status">No entry yet today. Write your reflection below.</p>
-    {% endif %}
+    <div class="card">
+        <div class="journal-date">{{ today|date:"l, F j, Y" }}</div>
 
-    <form method="post" action="{% url 'core:journal_save' %}" class="journal-form">
-        {% csrf_token %}
+        {% if entry %}
+            <div class="alert alert-success" style="margin-bottom:20px">
+                Entry saved — you can update it below.
+            </div>
+        {% endif %}
 
-        <!-- Content field -->
-        <div class="form-group">
-            <label for="{{ form.content.id_for_label }}">Reflection</label>
-            {{ form.content }}
-            {% if form.content.errors %}
+        <form method="post" action="{% url 'core:journal_save' %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.content.id_for_label }}">Reflection</label>
+                {{ form.content }}
                 {% for error in form.content.errors %}
-                    <p class="auth-error">{{ error }}</p>
+                    <div class="form-error">{{ error }}</div>
                 {% endfor %}
-            {% endif %}
-        </div>
+            </div>
 
-        <!-- Rating field -->
-        <div class="form-group">
-            <label for="{{ form.rating.id_for_label }}">How was your day? (1 = Poor, 10 = Excellent)</label>
-            {{ form.rating }}
-            {% if form.rating.errors %}
+            <div class="form-group" style="margin-bottom:24px">
+                <label class="form-label" for="{{ form.rating.id_for_label }}">How was your day? (1 = Poor, 10 = Excellent)</label>
+                {{ form.rating }}
                 {% for error in form.rating.errors %}
-                    <p class="auth-error">{{ error }}</p>
+                    <div class="form-error">{{ error }}</div>
                 {% endfor %}
-            {% endif %}
-        </div>
+            </div>
 
-        <button type="submit" class="btn btn-primary">
-            {% if entry %}Update Entry{% else %}Save Entry{% endif %}
-        </button>
-    </form>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button type="submit" class="btn btn-gold">
+                    {% if entry %}Update Entry{% else %}Save Entry{% endif %}
+                </button>
 
-    {% if entry %}
-    <!-- Delete form — only shown when an entry exists today -->
-    <form
-        method="post"
-        action="{% url 'core:journal_delete' %}"
-        style="margin-top: 0.8rem;"
-        onsubmit="return confirm('Delete today\'s journal entry? This cannot be undone.');"
-    >
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Delete Entry</button>
-    </form>
-    {% endif %}
-
+                {% if entry %}
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="if(confirm('Delete today\'s entry?')) document.getElementById('delete-form').submit()">
+                    Delete
+                </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
 </div>
+
+{% if entry %}
+<form id="delete-form" method="post" action="{% url 'core:journal_delete' %}" style="display:none">
+    {% csrf_token %}
+</form>
+{% endif %}
 {% endblock %}

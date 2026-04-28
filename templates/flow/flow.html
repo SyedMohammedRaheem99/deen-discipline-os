@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}Daily Flow — BarakahOS{% endblock %}
+
+{% block content %}
+
+<form id="csrf-form" style="display:none">{% csrf_token %}</form>
+
+<!-- Header -->
+<div class="page-actions" style="margin-bottom:20px">
+    <div>
+        <h1 class="page-title" style="margin-bottom:2px">Daily Flow</h1>
+        <div class="text-muted text-sm">{{ today|date:"l, F j" }} &nbsp;·&nbsp; 45 · 10 · 5 pattern</div>
+    </div>
+    <a href="{% url 'core:home' %}" class="btn btn-ghost btn-sm">← Today</a>
+</div>
+
+
+<!-- NOW card (only shown when inside a block) -->
+{% if current_block %}
+<div class="flow-now flow-now--{{ current_block.block_type }}" id="now-card">
+    <div class="flow-now-pulse"></div>
+    <div class="flow-now-body">
+        <div class="flow-now-label">Now</div>
+        <div class="flow-now-type">{{ current_block.get_block_type_display }}</div>
+        <div class="flow-now-range">
+            {{ current_block.start_time|time:"H:i" }} – {{ current_block.end_time|time:"H:i" }}
+        </div>
+    </div>
+    <div class="flow-now-remaining" id="now-remaining">—</div>
+</div>
+{% else %}
+<div class="flow-now" style="border-color:var(--border);background:var(--bg-card-2)" id="now-card">
+    <div style="width:9px;height:9px;border-radius:50%;background:var(--text-3);flex-shrink:0"></div>
+    <div class="flow-now-body">
+        <div class="flow-now-label" style="color:var(--text-3)">Flow</div>
+        <div class="flow-now-type" style="font-size:0.9rem;color:var(--text-2)">Outside flow hours</div>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- Settings: regenerate -->
+<form method="post" action="{% url 'core:flow_generate' %}" class="flow-settings">
+    {% csrf_token %}
+    <span class="flow-settings-label">Start</span>
+    <input type="time" name="start_time" class="flow-time-input" value="{{ start_val }}">
+    <span class="flow-settings-label">End</span>
+    <input type="time" name="end_time" class="flow-time-input" value="{{ end_val }}">
+    <button type="submit" class="btn btn-ghost btn-sm">↺ Regenerate</button>
+</form>
+
+
+<!-- Hour-grouped Timeline -->
+<div class="flow-timeline" id="flow-timeline">
+    {% for block in blocks %}
+
+    {# Open a new hour-group card every 3 blocks (one full cycle) #}
+    {% if forloop.counter0|divisibleby:3 %}
+
+        {# Close previous group (not on the very first) #}
+        {% if not forloop.first %}
+        </div>{# .flow-hour-body #}
+        </div>{# .flow-hour #}
+        {% endif %}
+
+        <div class="flow-hour {% if current_cycle_first_id and block.id == current_cycle_first_id %}flow-hour--active{% endif %}">
+            <div class="flow-hour-hdr">
+                <div class="flow-hour-left">
+                    <span class="flow-hour-label">{{ block.start_time|time:"H:i" }}</span>
+                    {% if current_cycle_first_id and block.id == current_cycle_first_id %}
+                    <span class="flow-hour-now-badge">NOW</span>
+                    {% endif %}
+                </div>
+                <span class="flow-hour-tag">60 min cycle</span>
+            </div>
+            <div class="flow-hour-body">
+
+    {% endif %}
+
+    {# Each block row #}
+    <div class="flow-entry flow-entry--{{ block.block_type }}
+                {% if current_block and block.id == current_block.id %}flow-entry--current{% endif %}
+                {% if block.is_completed %}flow-entry--done{% endif %}"
+         id="block-{{ block.id }}"
+         data-end="{{ block.end_time|time:'H:i' }}">
+
+        <div class="flow-time-range">
+            {{ block.start_time|time:"H:i" }} – {{ block.end_time|time:"H:i" }}
+        </div>
+
+        <span class="flow-type-pill">{{ block.get_block_type_display }}</span>
+
+        <div class="flow-type-name">
+            {% if block.block_type == 'work' %}Deep Focus
+            {% elif block.block_type == 'health' %}Move &amp; Stretch
+            {% else %}Dhikr &amp; Reset
+            {% endif %}
+        </div>
+
+        <div class="flow-duration">
+            {% if block.block_type == 'work' %}45m
+            {% elif block.block_type == 'health' %}10m
+            {% else %}5m
+            {% endif %}
+        </div>
+
+        <button class="flow-check {% if block.is_completed %}flow-check--done{% endif %}"
+                id="check-{{ block.id }}"
+                onclick="toggleBlock({{ block.id }}, '{% url 'core:flow_block_toggle' block.id %}')"
+                title="{% if block.is_completed %}Mark incomplete{% else %}Mark complete{% endif %}">
+        </button>
+
+    </div>
+
+    {# Close the last group #}
+    {% if forloop.last %}
+        </div>{# .flow-hour-body #}
+        </div>{# .flow-hour #}
+    {% endif %}
+
+    {% empty %}
+    <div class="card" style="padding:32px;text-align:center">
+        <div class="text-muted text-sm">No blocks generated yet. Set a start and end time above and click Regenerate.</div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+const CSRF = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
+
+// ── Toggle block ──────────────────────────────────────────────
+async function toggleBlock(id, url) {
+    const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const data = await r.json();
+    if (!data.success) return;
+
+    const entry = document.getElementById('block-' + id);
+    const check = document.getElementById('check-' + id);
+
+    if (data.completed) {
+        entry.classList.add('flow-entry--done');
+        check.classList.add('flow-check--done');
+    } else {
+        entry.classList.remove('flow-entry--done');
+        check.classList.remove('flow-check--done');
+    }
+}
+
+// ── Countdown for NOW card ────────────────────────────────────
+{% if current_block %}
+const nowEndStr = '{{ current_block.end_time|time:"H:i" }}';
+
+function updateCountdown() {
+    const [endH, endM] = nowEndStr.split(':').map(Number);
+    const now  = new Date();
+    const end  = new Date();
+    end.setHours(endH, endM, 0, 0);
+
+    const diff = end - now;
+    if (diff <= 0) { location.reload(); return; }
+
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    const el   = document.getElementById('now-remaining');
+    if (el) el.textContent = mins + 'm ' + String(secs).padStart(2, '0') + 's left';
+}
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+{% endif %}
+
+// ── Auto-scroll to current block ──────────────────────────────
+{% if current_block %}
+(function() {
+    const el = document.getElementById('block-{{ current_block.id }}');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})();
+{% endif %}
+</script>
+{% endblock %}
